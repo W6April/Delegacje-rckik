@@ -302,12 +302,13 @@
 
     let appData = JSON.parse(localStorage.getItem('rckik_app_data')) || defaultData;
 
-    // Migracja wsteczna dla starego formatu danych (jeśli ktoś miał zapisane same imiona)
+    // Migracja wsteczna dla starego formatu danych (jeśli w pamięci przeglądarki zostały stare dane tekstowe)
     if (appData.employees.length > 0 && typeof appData.employees[0] === 'string') {
         appData.employees = appData.employees.map(name => ({
             name: name,
             email: "bartosz.miller@m2mteam.pl"
         }));
+        saveAppData();
     }
 
     function saveAppData() {
@@ -429,7 +430,6 @@
             const coParticipants = allNames.filter(n => n !== emp.name);
             const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
 
-            // Tytuł e-maila automatycznie zawiera nazwę wybranego miejsca
             const emailSubject = `Protokół z podróży służbowej – ${location} – ${emp.name}`;
             
             const emailBody = `Szanowny Panie Kierowniku,
@@ -488,7 +488,7 @@ ${emp.name}`;
     function resetForm() {
         document.getElementById('results-card').style.display = 'none';
         document.getElementById('form-card').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth'>>);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     window.onload = initApp;
