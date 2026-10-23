@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCKiK - System Rozliczania Delegacji</title>
+    <style>
+        :root {
+            --primary-color: #c0392b;
+            --primary-hover: #a93226;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dcdde1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #666;
+            margin-top: 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="datetime-local"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        .inline-add {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.secondary {
+            background-color: #7f8c8d;
+        }
+        button.secondary:hover {
+            background-color: #616a6b;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            background: #fafafa;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        /* Sekcja wyników / emaili */
+        .results-container {
+            display: none;
+        }
+
+        .email-preview {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--primary-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+
+        .email-header {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .email-body {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .actions-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .badge {
+            background: #e1f5fe;
+            color: #0288d1;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>RCKiK Delegacje</h1>
+        <p>System rozliczania podróży służbowych i generowania protokołów</p>
+    </header>
+
+    <!-- FORMULARZ DELEGACJI -->
+    <div class="card" id="form-card">
+        <h2>Nowa Delegacja</h2>
+        
+        <!-- Lokalizacja -->
+        <div class="form-group">
+            <label for="locationSelect">Lokalizacja RCKiK:</label>
+            <select id="locationSelect"></select>
+            <div class="inline-add" style="margin-top: 8px;">
+                <input type="text" id="newLocationInput" placeholder="Nowa lokalizacja (np. RCKiK Warszawa)">
+                <button type="button" onclick="addLocation()">Dodaj lokalizację</button>
+            </div>
+        </div>
+
+        <!-- Samochód -->
+        <div class="form-group">
+            <label for="vehicleSelect">Samochód:</label>
+            <select id="vehicleSelect"></select>
+            <div class="inline-add" style="margin-top: 8px;">
+                <input type="text" id="newVehicleInput" placeholder="Nowy samochód (Marka, Nr rej)">
+                <button type="button" onclick="addVehicle()">Dodaj samochód</button>
+            </div>
+        </div>
+
+        <!-- Pracownicy -->
+        <div class="form-group">
+            <label>Uczestnicy delegacji (zaznacz osoby):</label>
+            <div class="checkbox-group" id="employeesCheckboxGroup">
+                <!-- Generowane dynamicznie -->
+            </div>
+            <div class="inline-add" style="margin-top: 8px;">
+                <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
+                <button type="button" onclick="addEmployee()">Dodaj pracownika</button>
+            </div>
+        </div>
+
+        <!-- Daty i godziny -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="form-group">
+                <label for="departureTime">Data i godzina wyjazdu:</label>
+                <input type="datetime-local" id="departureTime">
+            </div>
+            <div class="form-group">
+                <label for="returnTime">Data i godzina powrotu:</label>
+                <input type="datetime-local" id="returnTime">
+            </div>
+        </div>
+
+        <!-- Cel i Praca -->
+        <div class="form-group">
+            <label for="delegationPurpose">Cel delegacji:</label>
+            <input type="text" id="delegationPurpose" placeholder="np. Transport preparatów krwią / Spotkanie robocze">
+        </div>
+
+        <div class="form-group">
+            <label for="workDescription">Opis wykonanej pracy:</label>
+            <textarea id="workDescription" placeholder="Szczegółowy opis wykonanych czynności..."></textarea>
+        </div>
+
+        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj Protokoły dla Uczestników</button>
+    </div>
+
+    <!-- WYNIKI / WYGENEROWANE E-MAILERE -->
+    <div class="card results-container" id="results-card">
+        <h2>Wygenerowane Protokoły E-mail (Dla Kierownika)</h2>
+        <p style="font-size: 14px; color: #666;">Dla każdego uczestnika wygenerowano osobny protokół do wysyłki w celu wykluczenia czasu pracy:</p>
+        
+        <div id="emailsContainer">
+            <!-- Tutaj pojawią się wygenerowane maile -->
+        </div>
+
+        <button type="button" class="secondary" onclick="resetForm()" style="margin-top: 15px;">← Wróć do formularza / Nowa delegacja</button>
+    </div>
+</div>
+
+<script>
+    // Domyślne dane początkowe
+    const defaultData = {
+        locations: [
+            "RCKiK Łódź",
+            "RCKiK Gdańsk",
+            "RCKiK Kielce",
+            "RCKiK Kalisz",
+            "RCKiK Rzeszów",
+            "RCKiK Olsztyn",
+            "RCKiK Katowice",
+            "RCKiK Białystok",
+            "RCKiK Szczecin"
+        ],
+        vehicles: [
+            "Opel Movano (WU 4395R)",
+            "Renault Master (WU 4724L)"
+        ],
+        employees: [
+            "Bartosz Miller",
+            "Marek Kwiecień",
+            "Kacper Górka",
+            "Kamil Cieżko"
+        ]
+    };
+
+    // Pobieranie danych z localStorage lub ładowanie domyślnych
+    let appData = JSON.parse(localStorage.getItem('rckik_app_data')) || defaultData;
+
+    function saveAppData() {
+        localStorage.setItem('rckik_app_data', JSON.stringify(appData));
+    }
+
+    // Inicjalizacja widoku
+    function initApp() {
+        renderLocations();
+        renderVehicles();
+        renderEmployees();
+    }
+
+    function renderLocations() {
+        const select = document.getElementById('locationSelect');
+        select.innerHTML = '';
+        appData.locations.forEach(loc => {
+            const option = document.createElement('option');
+            option.value = loc;
+            option.textContent = loc;
+            select.appendChild(option);
+        });
+    }
+
+    function renderVehicles() {
+        const select = document.getElementById('vehicleSelect');
+        select.innerHTML = '';
+        appData.vehicles.forEach(veh => {
+            const option = document.createElement('option');
+            option.value = veh;
+            option.textContent = veh;
+            select.appendChild(option);
+        });
+    }
+
+    function renderEmployees() {
+        const container = document.getElementById('employeesCheckboxGroup');
+        container.innerHTML = '';
+        appData.employees.forEach((emp, index) => {
+            const label = document.createElement('label');
+            label.className = 'checkbox-label';
+            label.innerHTML = `
+                <input type="checkbox" name="employeeCheckbox" value="${emp}" id="emp_${index}">
+                ${emp}
+            `;
+            container.appendChild(label);
+        });
+    }
+
+    // Funkcje dodawania nowych elementów z poziomu aplikacji
+    function addLocation() {
+        const input = document.getElementById('newLocationInput');
+        const val = input.value.trim();
+        if (!val) {
+            alert('Wpisz nazwę lokalizacji.');
+            return;
+        }
+        if (appData.locations.includes(val)) {
+            alert('Taka lokalizacja już istnieje.');
+            return;
+        }
+        appData.locations.push(val);
+        saveAppData();
+        renderLocations();
+        input.value = '';
+        alert('Dodano lokalizację!');
+    }
+
+    function addVehicle() {
+        const input = document.getElementById('newVehicleInput');
+        const val = input.value.trim();
+        if (!val) {
+            alert('Wpisz dane samochodu.');
+            return;
+        }
+        if (appData.vehicles.includes(val)) {
+            alert('Taki samochód już istnieje.');
+            return;
+        }
+        appData.vehicles.push(val);
+        saveAppData();
+        renderVehicles();
+        input.value = '';
+        alert('Dodano samochód!');
+    }
+
+    function addEmployee() {
+        const input = document.getElementById('newEmployeeInput');
+        const val = input.value.trim();
+        if (!val) {
+            alert('Wpisz imię i nazwisko pracownika.');
+            return;
+        }
+        if (appData.employees.includes(val)) {
+            alert('Taki pracownik już istnieje.');
+            return;
+        }
+        appData.employees.push(val);
+        saveAppData();
+        renderEmployees();
+        input.value = '';
+        alert('Dodano pracownika!');
+    }
+
+    // Generowanie protokołów e-mail dla każdego zaznaczonego pracownika
+    function generateProtocols() {
+        const location = document.getElementById('locationSelect').value;
+        const vehicle = document.getElementById('vehicleSelect').value;
+        const departure = document.getElementById('departureTime').value;
+        const returnT = document.getElementById('returnTime').value;
+        const purpose = document.getElementById('delegationPurpose').value.trim();
+        const workDesc = document.getElementById('workDescription').value.trim();
+
+        // Pobierz zaznaczonych pracowników
+        const checkboxes = document.querySelectorAll('input[name="employeeCheckbox"]:checked');
+        const selectedEmployees = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedEmployees.length === 0) {
+            alert('Musisz zaznaczyć przynajmniej jednego uczestnika delegacji!');
+            return;
+        }
+
+        if (!departure || !returnT) {
+            alert('Proszę uzupełnić datę i godzinę wyjazdu oraz powrotu.');
+            return;
+        }
+
+        const emailsContainer = document.getElementById('emailsContainer');
+        emailsContainer.innerHTML = '';
+
+        // Dla każdego pracownika tworzymy osobny protokół
+        selectedEmployees.forEach(employee => {
+            // Współuczestnicy (wszyscy oprócz aktualnego pracownika)
+            const coParticipants = selectedEmployees.filter(e => e !== employee);
+            const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
+
+            const emailSubject = `Protokół z podróży służbowej / Wykluczenie czasu pracy – ${employee}`;
+            
+            const emailBody = `Szanowny Panie Kierowniku,
+
+Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
+
+• Uczestnik delegacji (zgłaszający): ${employee}
+• Współuczestnicy wyjazdu: ${coParticipantsStr}
+• Lokalizacja docelowa: ${location}
+• Wykorzystany pojazd: ${vehicle}
+• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
+• Data i godzina powrotu: ${returnT.replace('T', ' ')}
+• Cel delegacji: ${purpose || 'Nie podano'}
+• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
+
+Z poważaniem,
+${employee}`;
+
+            // Karta podglądu e-maila
+            const emailDiv = document.createElement('div');
+            emailDiv.className = 'email-preview';
+            emailDiv.innerHTML = `
+                <div class="email-header">
+                    E-mail dla: <span style="color:var(--primary-color);">${employee}</span>
+                    <span class="badge" style="float: right;">Osobny protokół</span>
+                </div>
+                <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
+                <div class="email-body">${emailBody}</div>
+                <div class="actions-row">
+                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
+                    <a href="mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Otwórz w kliencie poczty (np. Outlook) ✉</a>
+                </div>
+            `;
+            emailsContainer.appendChild(emailDiv);
+        });
+
+        // Przełącz widok formularza na wyniki
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('results-card').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function copyToClipboard(button) {
+        const text = decodeURIComponent(button.getAttribute('data-text'));
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = button.textContent;
+            button.textContent = 'Skopiowano do schowka! ✓';
+            button.style.backgroundColor = '#27ae60';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '';
+            }, 2000);
+        }).catch(err => {
+            alert('Nie udało się skopiować.');
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('results-card').style.display = 'none';
+        document.getElementById('form-card').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Uruchomienie przy ładowaniu strony
+    window.onload = initApp;
+</script>
+
+</body>
+</html>
