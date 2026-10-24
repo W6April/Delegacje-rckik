@@ -570,3 +570,159 @@
             const allCheckboxes = Array.from(checkboxes);
             const coParticipants = allCheckboxes.map(c => c.value).filter(n => n !== empName);
             const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
+
+            const emailSubject = `${location} - ${empName}`;
+            
+            const emailBody = `Szanowny Panie Kierowniku,
+
+Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
+
+• Uczestnik delegacji (zgłaszający): ${empName}
+• Współuczestnicy wyjazdu: ${coParticipantsStr}
+• Lokalizacja docelowa: ${location}
+• Wykorzystany pojazd: ${vehicle}
+• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
+• Data i godzina powrotu: ${returnT.replace('T', ' ')}
+• Cel delegacji: ${purpose || 'Nie podano'}
+• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
+• Załącznik (rachunek/faktura): ${fileName}
+
+Z poważaniem,
+${empName}`;
+
+            delegationRecord.participants.push({
+                name: empName,
+                email: empEmail,
+                attachment: fileName
+            });
+
+            const emailDiv = document.createElement('div');
+            emailDiv.className = 'email-preview';
+            emailDiv.innerHTML = `
+                <div class="email-header">
+                    E-mail do: <span style="color:var(--primary-color);">${empEmail}</span> (Pracownik: <b>${empName}</b>)
+                    <span class="badge" style="float: right;">Załącznik: ${fileName}</span>
+                </div>
+                <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
+                <div class="email-body">${emailBody}</div>
+                <div class="actions-row">
+                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
+                    <a href="mailto:${empEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
+                </div>
+            `;
+            emailsContainer.appendChild(emailDiv);
+        }
+
+        appData.history.unshift(delegationRecord);
+        saveAppData();
+
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('results-card').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function copyToClipboard(button) {
+        const text = decodeURIComponent(button.getAttribute('data-text'));
+        navigator.clipboard.writeText(text).then(() => {
+            const originalText = button.textContent;
+            button.textContent = 'Skopiowano do schowka! ✓';
+            button.style.backgroundColor = '#27ae60';
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.backgroundColor = '';
+            }, 2000);
+        }).catch(err => {
+            alert('Nie udało się skopiować.');
+        });
+    }
+
+    function switchTab(tab) {
+        const formCard = document.getElementById('form-card');
+        const resultsCard = document.getElementById('results-card');
+        const historyCard = document.getElementById('history-card');
+        const btnForm = document.getElementById('tabFormBtn');
+        const btnHistory = document.getElementById('tabHistoryBtn');
+
+        resultsCard.style.display = 'none';
+
+        if (tab === 'form') {
+            formCard.style.display = 'block';
+            historyCard.style.display = 'none';
+            btnForm.classList.add('active');
+            btnHistory.classList.remove('active');
+        } else if (tab === 'history') {
+            formCard.style.display = 'none';
+            historyCard.style.display = 'block';
+            btnHistory.classList.add('active');
+            btnForm.classList.remove('active');
+            renderHistory();
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('historyTableContainer');
+        const filterEmp = document.getElementById('filterEmployee').value;
+
+        let filteredHistory = appData.history;
+        if (filterEmp) {
+            filteredHistory = appData.history.filter(item => 
+                item.participants.some(p => p.name === filterEmp)
+            );
+        }
+
+        if (filteredHistory.length === 0) {
+            container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii delegacji do wyświetlenia.</p>';
+            return;
+        }
+
+        let html = `
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Data utworzenia</th>
+                        <th>Lokalizacja</th>
+                        <th>Pojazd</th>
+                        <th>Termin wyjazdu / powrotu</th>
+                        <th>Uczestnicy i Rachunki</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        filteredHistory.forEach(item => {
+            const participantsList = item.participants.map(p => `• <b>${p.name}</b> (Plik: ${p.attachment})`).join('<br>');
+            html += `
+                <tr>
+                    <td>${item.dateCreated}</td>
+                    <td><b>${item.location}</b><br><small style="color:#666;">Cel: ${item.purpose}</small></td>
+                    <td>${item.vehicle}</td>
+                    <td>${item.departure} <br>do<br> ${item.return}</td>
+                    <td>${participantsList}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function clearHistory() {
+        if (confirm('Czy na pewno chcesz wyczyścić całą historię delegacji?')) {
+            appData.history = [];
+            saveAppData();
+            renderHistory();
+        }
+    }
+
+    function resetForm() {
+        switchTab('form');
+        setDefaultDates();
+        renderEmployees();
+    }
+
+    window.onload = initApp;
+</script>
+
+</body>
+</html>
