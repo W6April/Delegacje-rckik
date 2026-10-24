@@ -23,7 +23,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto;
         }
 
@@ -83,7 +83,7 @@
 
         textarea {
             resize: vertical;
-            height: 100px;
+            height: 90px;
         }
 
         .inline-add {
@@ -116,27 +116,42 @@
         }
 
         .checkbox-group {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             background: #fafafa;
             padding: 15px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
 
-        .checkbox-label {
+        .employee-row {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 8px;
-            font-weight: normal;
-            cursor: pointer;
+            justify-content: space-between;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            gap: 10px;
         }
 
-        .checkbox-label input {
-            cursor: pointer;
-            width: 18px;
-            height: 18px;
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-input-container {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .file-input-container input[type="file"] {
+            font-size: 12px;
         }
 
         .btn-submit {
@@ -146,7 +161,7 @@
             margin-top: 10px;
         }
 
-        .results-container {
+        .results-container, .history-container {
             display: none;
         }
 
@@ -191,6 +206,40 @@
             font-size: 12px;
             font-weight: bold;
         }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .history-table th, .history-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+        }
+
+        .history-table th {
+            background-color: #f1f2f6;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .nav-tabs button {
+            flex: 1;
+            background: #e4e7eb;
+            color: #333;
+        }
+
+        .nav-tabs button.active {
+            background: var(--primary-color);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -198,8 +247,13 @@
 <div class="container">
     <header>
         <h1>RCKiK Delegacje</h1>
-        <p>System rozliczania podróży służbowych i generowania protokołów</p>
+        <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
     </header>
+
+    <div class="nav-tabs">
+        <button type="button" id="tabFormBtn" class="active" onclick="switchTab('form')">Nowa Delegacja</button>
+        <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia Delegacji</button>
+    </div>
 
     <!-- FORMULARZ DELEGACJI -->
     <div class="card" id="form-card">
@@ -225,12 +279,12 @@
             </div>
         </div>
 
-        <!-- Pracownicy i E-mail -->
+        <!-- Pracownicy i Rachunki -->
         <div class="form-group">
-            <label>Uczestnicy delegacji (zaznacz osoby):</label>
+            <label>Uczestnicy delegacji (zaznacz osoby i opcjonalnie dodaj rachunek/fakturę):</label>
             <div class="checkbox-group" id="employeesCheckboxGroup"></div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 8px;">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px;">
                 <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
                 <input type="email" id="newEmployeeEmailInput" placeholder="E-mail pracownika">
             </div>
@@ -266,48 +320,56 @@
     <!-- WYNIKI / WYGENEROWANE E-MAILERE -->
     <div class="card results-container" id="results-card">
         <h2>Wygenerowane Protokoły E-mail (Dla Kierownika)</h2>
-        <p style="font-size: 14px; color: #666;">Dla każdego uczestnika wygenerowano osobny protokół do wysyłki na wskazany adres kierownika:</p>
+        <p style="font-size: 14px; color: #666;">Dla każdego uczestnika wygenerowano osobny protokół. Załączniki (faktury) zostały powiązane z wiadomościami:</p>
         
         <div id="emailsContainer"></div>
 
         <button type="button" class="secondary" onclick="resetForm()" style="margin-top: 15px;">← Wróć do formularza / Nowa delegacja</button>
     </div>
+
+    <!-- HISTORIA DELEGACJI -->
+    <div class="card history-container" id="history-card">
+        <h2>Historia Delegacji</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div>
+                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj pracownika:</label>
+                <select id="filterEmployee" onchange="renderHistory()" style="padding: 5px; font-size: 13px; display:inline-block; width: auto;">
+                    <option value="">Wszyscy pracownicy</option>
+                </select>
+            </div>
+            <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść historię</button>
+        </div>
+        <div id="historyTableContainer">
+            <!-- Tabela historii -->
+        </div>
+        <button type="button" class="secondary" onclick="switchTab('form')" style="margin-top: 15px;">← Powrót do formularza</button>
+    </div>
 </div>
 
 <script>
-    // Domyślne dane początkowe z adresami e-mail
     const defaultData = {
         locations: [
-            "RCKiK Łódź",
-            "RCKiK Gdańsk",
-            "RCKiK Kielce",
-            "RCKiK Kalisz",
-            "RCKiK Rzeszów",
-            "RCKiK Olsztyn",
-            "RCKiK Katowice",
-            "RCKiK Białystok",
-            "RCKiK Szczecin"
+            "RCKiK Łódź", "RCKiK Gdańsk", "RCKiK Kielce", "RCKiK Kalisz", 
+            "RCKiK Rzeszów", "RCKiK Olsztyn", "RCKiK Katowice", "RCKiK Białystok", "RCKiK Szczecin"
         ],
         vehicles: [
-            "Opel Movano (WU 4395R)",
-            "Renault Master (WU 4724L)"
+            "Opel Movano (WU 4395R)", "Renault Master (WU 4724L)"
         ],
         employees: [
             { name: "Bartosz Miller", email: "bartosz.miller@m2mteam.pl" },
             { name: "Marek Kwiecień", email: "bartosz.miller@m2mteam.pl" },
             { name: "Kacper Górka", email: "bartosz.miller@m2mteam.pl" },
             { name: "Kamil Cieżko", email: "bartosz.miller@m2mteam.pl" }
-        ]
+        ],
+        history: []
     };
 
     let appData = JSON.parse(localStorage.getItem('rckik_app_data')) || defaultData;
+    if (!appData.history) appData.history = [];
 
-    // Migracja wsteczna dla starego formatu danych (jeśli w pamięci przeglądarki zostały stare dane tekstowe)
+    // Migracja formatu pracowników jeśli stary
     if (appData.employees.length > 0 && typeof appData.employees[0] === 'string') {
-        appData.employees = appData.employees.map(name => ({
-            name: name,
-            email: "bartosz.miller@m2mteam.pl"
-        }));
+        appData.employees = appData.employees.map(name => ({ name: name, email: "bartosz.miller@m2mteam.pl" }));
         saveAppData();
     }
 
@@ -319,6 +381,20 @@
         renderLocations();
         renderVehicles();
         renderEmployees();
+        setDefaultDates();
+        populateFilterDropdown();
+    }
+
+    function setDefaultDates() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        const todayStr = `${year}-${month}-${day}`;
+        
+        document.getElementById('departureTime').value = `${todayStr}T06:00`;
+        document.getElementById('returnTime').value = `${todayStr}T14:00`;
     }
 
     function renderLocations() {
@@ -347,13 +423,32 @@
         const container = document.getElementById('employeesCheckboxGroup');
         container.innerHTML = '';
         appData.employees.forEach((emp, index) => {
-            const label = document.createElement('label');
-            label.className = 'checkbox-label';
-            label.innerHTML = `
-                <input type="checkbox" name="employeeCheckbox" value="${emp.name}" data-email="${emp.email}" id="emp_${index}">
-                ${emp.name} <span style="font-size:11px; color:#888;">(${emp.email})</span>
+            const row = document.createElement('div');
+            row.className = 'employee-row';
+            row.innerHTML = `
+                <div class="employee-info">
+                    <input type="checkbox" name="employeeCheckbox" value="${emp.name}" data-email="${emp.email}" id="emp_${index}" style="width:18px; height:18px; cursor:pointer;">
+                    <label for="emp_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
+                        <b>${emp.name}</b> <span style="font-size:11px; color:#888;">(${emp.email})</span>
+                    </label>
+                </div>
+                <div class="file-input-container">
+                    <label for="file_${index}" style="font-size:12px; margin:0; color:#555;">Rachunek/Faktura:</label>
+                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="max-width: 220px;">
+                </div>
             `;
-            container.appendChild(label);
+            container.appendChild(row);
+        });
+    }
+
+    function populateFilterDropdown() {
+        const filterSelect = document.getElementById('filterEmployee');
+        filterSelect.innerHTML = '<option value="">Wszyscy pracownicy</option>';
+        appData.employees.forEach(emp => {
+            const option = document.createElement('option');
+            option.value = emp.name;
+            option.textContent = emp.name;
+            filterSelect.appendChild(option);
         });
     }
 
@@ -393,12 +488,13 @@
         appData.employees.push({ name: name, email: email });
         saveAppData();
         renderEmployees();
+        populateFilterDropdown();
         nameInput.value = '';
         emailInput.value = '';
         alert('Dodano pracownika!');
     }
 
-    function generateProtocols() {
+    async function generateProtocols() {
         const location = document.getElementById('locationSelect').value;
         const vehicle = document.getElementById('vehicleSelect').value;
         const departure = document.getElementById('departureTime').value;
@@ -407,12 +503,7 @@
         const workDesc = document.getElementById('workDescription').value.trim();
 
         const checkboxes = document.querySelectorAll('input[name="employeeCheckbox"]:checked');
-        const selectedEmployees = Array.from(checkboxes).map(cb => ({
-            name: cb.value,
-            email: cb.getAttribute('data-email')
-        }));
-
-        if (selectedEmployees.length === 0) {
+        if (checkboxes.length === 0) {
             alert('Musisz zaznaczyć przynajmniej jednego uczestnika delegacji!');
             return;
         }
@@ -425,18 +516,40 @@
         const emailsContainer = document.getElementById('emailsContainer');
         emailsContainer.innerHTML = '';
 
-        selectedEmployees.forEach(emp => {
-            const allNames = selectedEmployees.map(e => e.name);
-            const coParticipants = allNames.filter(n => n !== emp.name);
+        const delegationRecord = {
+            id: Date.now(),
+            dateCreated: new Date().toLocaleString(),
+            location: location,
+            vehicle: vehicle,
+            departure: departure.replace('T', ' '),
+            return: returnT.replace('T', ' '),
+            purpose: purpose || 'Brak',
+            participants: []
+        };
+
+        for (const cb of checkboxes) {
+            const empName = cb.value;
+            const empEmail = cb.getAttribute('data-email');
+            
+            // Znajdź plik dla danego pracownika
+            const fileInput = document.querySelector(`input[type="file"][data-emp="${empName}"]`);
+            let fileName = 'Brak załącznika';
+            if (fileInput && fileInput.files.length > 0) {
+                fileName = fileInput.files[0].name;
+            }
+
+            const allCheckboxes = Array.from(checkboxes);
+            const coParticipants = allCheckboxes.map(c => c.value).filter(n => n !== empName);
             const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
 
-            const emailSubject = `Protokół z podróży służbowej – ${location} – ${emp.name}`;
+            // Tytuł e-maila od razu z lokalizacją i imieniem
+            const emailSubject = `${location} - ${empName}`;
             
             const emailBody = `Szanowny Panie Kierowniku,
 
 Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
 
-• Uczestnik delegacji (zgłaszający): ${emp.name}
+• Uczestnik delegacji (zgłaszający): ${empName}
 • Współuczestnicy wyjazdu: ${coParticipantsStr}
 • Lokalizacja docelowa: ${location}
 • Wykorzystany pojazd: ${vehicle}
@@ -444,55 +557,20 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczeni
 • Data i godzina powrotu: ${returnT.replace('T', ' ')}
 • Cel delegacji: ${purpose || 'Nie podano'}
 • Opis wykonanej pracy: ${workDesc || 'Nie podano'}
+• Załącznik (rachunek/faktura): ${fileName}
 
 Z poważaniem,
-${emp.name}`;
+${empName}`;
+
+            delegationRecord.participants.push({
+                name: empName,
+                email: empEmail,
+                attachment: fileName
+            });
 
             const emailDiv = document.createElement('div');
             emailDiv.className = 'email-preview';
             emailDiv.innerHTML = `
                 <div class="email-header">
-                    E-mail do: <span style="color:var(--primary-color);">${emp.email}</span> (Pracownik: <b>${emp.name}</b>)
-                    <span class="badge" style="float: right;">Osobny protokół</span>
-                </div>
-                <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
-                <div class="email-body">${emailBody}</div>
-                <div class="actions-row">
-                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
-                    <a href="mailto:${emp.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
-                </div>
-            `;
-            emailsContainer.appendChild(emailDiv);
-        });
-
-        document.getElementById('form-card').style.display = 'none';
-        document.getElementById('results-card').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function copyToClipboard(button) {
-        const text = decodeURIComponent(button.getAttribute('data-text'));
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = button.textContent;
-            button.textContent = 'Skopiowano do schowka! ✓';
-            button.style.backgroundColor = '#27ae60';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.style.backgroundColor = '';
-            }, 2000);
-        }).catch(err => {
-            alert('Nie udało się skopiować.');
-        });
-    }
-
-    function resetForm() {
-        document.getElementById('results-card').style.display = 'none';
-        document.getElementById('form-card').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    window.onload = initApp;
-</script>
-
-</body>
-</html>
+                    E-mail do: <span style="color:var(--primary-color);">${empEmail}</span> (Pracownik: <b>${empName}</b>)
+                    <span class="badge
