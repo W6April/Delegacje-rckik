@@ -315,6 +315,10 @@
         </div>
 
         <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj Protokoły dla Uczestników</button>
+        
+        <div style="text-align: right; margin-top: 15px;">
+            <button type="button" class="secondary" onclick="resetToDefaults()" style="font-size: 11px; padding: 5px 10px; background: #e74c3c;">Resetuj słowniki do domyślnych</button>
+        </div>
     </div>
 
     <!-- WYNIKI / WYGENEROWANE E-MAILERE -->
@@ -339,9 +343,7 @@
             </div>
             <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść historię</button>
         </div>
-        <div id="historyTableContainer">
-            <!-- Tabela historii -->
-        </div>
+        <div id="historyTableContainer"></div>
         <button type="button" class="secondary" onclick="switchTab('form')" style="margin-top: 15px;">← Powrót do formularza</button>
     </div>
 </div>
@@ -364,17 +366,35 @@
         history: []
     };
 
-    let appData = JSON.parse(localStorage.getItem('rckik_app_data')) || defaultData;
-    if (!appData.history) appData.history = [];
-
-    // Migracja formatu pracowników jeśli stary
-    if (appData.employees.length > 0 && typeof appData.employees[0] === 'string') {
-        appData.employees = appData.employees.map(name => ({ name: name, email: "bartosz.miller@m2mteam.pl" }));
-        saveAppData();
+    // Bezpieczne ładowanie i naprawa danych z localStorage
+    let appData;
+    try {
+        const saved = JSON.parse(localStorage.getItem('rckik_app_data'));
+        appData = {
+            locations: (saved && Array.isArray(saved.locations) && saved.locations.length > 0) ? saved.locations : defaultData.locations,
+            vehicles: (saved && Array.isArray(saved.vehicles) && saved.vehicles.length > 0) ? saved.vehicles : defaultData.vehicles,
+            employees: (saved && Array.isArray(saved.employees) && saved.employees.length > 0) 
+                ? saved.employees.map(e => typeof e === 'string' ? { name: e, email: "bartosz.miller@m2mteam.pl" } : e) 
+                : defaultData.employees,
+            history: (saved && Array.isArray(saved.history)) ? saved.history : []
+        };
+    } catch (e) {
+        appData = defaultData;
     }
 
     function saveAppData() {
         localStorage.setItem('rckik_app_data', JSON.stringify(appData));
+    }
+
+    function resetToDefaults() {
+        if (confirm('Czy na pewno chcesz zresetować lokalizacje, samochody i pracowników do stanu domyślnego? (Historia zostanie zachowana)')) {
+            appData.locations = [...defaultData.locations];
+            appData.vehicles = [...defaultData.vehicles];
+            appData.employees = [...defaultData.employees];
+            saveAppData();
+            initApp();
+            alert('Zresetowano słowniki pomyślnie!');
+        }
     }
 
     function initApp() {
@@ -390,7 +410,6 @@
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-        
         const todayStr = `${year}-${month}-${day}`;
         
         document.getElementById('departureTime').value = `${todayStr}T06:00`;
@@ -399,6 +418,7 @@
 
     function renderLocations() {
         const select = document.getElementById('locationSelect');
+        if (!select) return;
         select.innerHTML = '';
         appData.locations.forEach(loc => {
             const option = document.createElement('option');
@@ -410,6 +430,7 @@
 
     function renderVehicles() {
         const select = document.getElementById('vehicleSelect');
+        if (!select) return;
         select.innerHTML = '';
         appData.vehicles.forEach(veh => {
             const option = document.createElement('option');
@@ -421,6 +442,7 @@
 
     function renderEmployees() {
         const container = document.getElementById('employeesCheckboxGroup');
+        if (!container) return;
         container.innerHTML = '';
         appData.employees.forEach((emp, index) => {
             const row = document.createElement('div');
@@ -443,6 +465,7 @@
 
     function populateFilterDropdown() {
         const filterSelect = document.getElementById('filterEmployee');
+        if (!filterSelect) return;
         filterSelect.innerHTML = '<option value="">Wszyscy pracownicy</option>';
         appData.employees.forEach(emp => {
             const option = document.createElement('option');
@@ -531,7 +554,6 @@
             const empName = cb.value;
             const empEmail = cb.getAttribute('data-email');
             
-            // Znajdź plik dla danego pracownika
             const fileInput = document.querySelector(`input[type="file"][data-emp="${empName}"]`);
             let fileName = 'Brak załącznika';
             if (fileInput && fileInput.files.length > 0) {
@@ -542,35 +564,5 @@
             const coParticipants = allCheckboxes.map(c => c.value).filter(n => n !== empName);
             const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
 
-            // Tytuł e-maila od razu z lokalizacją i imieniem
             const emailSubject = `${location} - ${empName}`;
-            
-            const emailBody = `Szanowny Panie Kierowniku,
-
-Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
-
-• Uczestnik delegacji (zgłaszający): ${empName}
-• Współuczestnicy wyjazdu: ${coParticipantsStr}
-• Lokalizacja docelowa: ${location}
-• Wykorzystany pojazd: ${vehicle}
-• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
-• Data i godzina powrotu: ${returnT.replace('T', ' ')}
-• Cel delegacji: ${purpose || 'Nie podano'}
-• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
-• Załącznik (rachunek/faktura): ${fileName}
-
-Z poważaniem,
-${empName}`;
-
-            delegationRecord.participants.push({
-                name: empName,
-                email: empEmail,
-                attachment: fileName
-            });
-
-            const emailDiv = document.createElement('div');
-            emailDiv.className = 'email-preview';
-            emailDiv.innerHTML = `
-                <div class="email-header">
-                    E-mail do: <span style="color:var(--primary-color);">${empEmail}</span> (Pracownik: <b>${empName}</b>)
-                    <span class="badge
+    
