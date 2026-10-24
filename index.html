@@ -349,6 +349,9 @@
 </div>
 
 <script>
+    // ZMIANA KLUCZA BAZY DANYCH - wymusza usunięcie błędów i załadowanie świeżych danych
+    const STORAGE_KEY = 'rckik_app_data_v2';
+
     const defaultData = {
         locations: [
             "RCKiK Łódź", "RCKiK Gdańsk", "RCKiK Kielce", "RCKiK Kalisz", 
@@ -366,24 +369,28 @@
         history: []
     };
 
-    // Bezpieczne ładowanie i naprawa danych z localStorage
     let appData;
+    
+    // Bezpieczne ładowanie danych
     try {
-        const saved = JSON.parse(localStorage.getItem('rckik_app_data'));
-        appData = {
-            locations: (saved && Array.isArray(saved.locations) && saved.locations.length > 0) ? saved.locations : defaultData.locations,
-            vehicles: (saved && Array.isArray(saved.vehicles) && saved.vehicles.length > 0) ? saved.vehicles : defaultData.vehicles,
-            employees: (saved && Array.isArray(saved.employees) && saved.employees.length > 0) 
-                ? saved.employees.map(e => typeof e === 'string' ? { name: e, email: "bartosz.miller@m2mteam.pl" } : e) 
-                : defaultData.employees,
-            history: (saved && Array.isArray(saved.history)) ? saved.history : []
-        };
+        const savedStr = localStorage.getItem(STORAGE_KEY);
+        if (savedStr) {
+            const saved = JSON.parse(savedStr);
+            appData = {
+                locations: Array.isArray(saved.locations) ? saved.locations : [...defaultData.locations],
+                vehicles: Array.isArray(saved.vehicles) ? saved.vehicles : [...defaultData.vehicles],
+                employees: Array.isArray(saved.employees) ? saved.employees : [...defaultData.employees],
+                history: Array.isArray(saved.history) ? saved.history : []
+            };
+        } else {
+            appData = JSON.parse(JSON.stringify(defaultData));
+        }
     } catch (e) {
-        appData = defaultData;
+        appData = JSON.parse(JSON.stringify(defaultData));
     }
 
     function saveAppData() {
-        localStorage.setItem('rckik_app_data', JSON.stringify(appData));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
     }
 
     function resetToDefaults() {
@@ -517,7 +524,7 @@
         alert('Dodano pracownika!');
     }
 
-    async function generateProtocols() {
+    function generateProtocols() {
         const location = document.getElementById('locationSelect').value;
         const vehicle = document.getElementById('vehicleSelect').value;
         const departure = document.getElementById('departureTime').value;
@@ -563,6 +570,3 @@
             const allCheckboxes = Array.from(checkboxes);
             const coParticipants = allCheckboxes.map(c => c.value).filter(n => n !== empName);
             const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
-
-            const emailSubject = `${location} - ${empName}`;
-    
