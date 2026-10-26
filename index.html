@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCKiK - System Rozliczania Delegacji</title>
+    
     <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#c0392b">
+    <meta name="theme-color" content="#c0392b">
+
     <style>
         :root {
             --primary-color: #c0392b;
@@ -117,17 +119,17 @@
             background-color: #616a6b;
         }
 
-        .checkbox-group {
+        .participants-container {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             background: #fafafa;
             padding: 15px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
 
-        .employee-row {
+        .participant-row {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -139,10 +141,10 @@
             gap: 10px;
         }
 
-        .employee-info {
+        .participant-roles {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
 
         .file-input-container {
@@ -281,10 +283,11 @@
             </div>
         </div>
 
-        <!-- Pracownicy i Rachunki -->
+        <!-- Uczestnicy -->
         <div class="form-group">
-            <label>Uczestnicy delegacji (zaznacz osoby i opcjonalnie dodaj rachunek/fakturę):</label>
-            <div class="checkbox-group" id="employeesCheckboxGroup"></div>
+            <label>Uczestnicy delegacji:</label>
+            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz **kto wypełnia** protokół. 2. Zaznacz **z kim był** (współuczestnicy). 3. Opcjonalnie dodaj rachunek/fakturę.</p>
+            <div class="participants-container" id="participantsGroup"></div>
             
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px;">
                 <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
@@ -297,12 +300,17 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
             <div class="form-group">
                 <label for="departureTime">Data i godzina wyjazdu:</label>
-                <input type="datetime-local" id="departureTime">
+                <input type="datetime-local" id="departureTime" onchange="calculateAllowancePreview()">
             </div>
             <div class="form-group">
                 <label for="returnTime">Data i godzina powrotu:</label>
-                <input type="datetime-local" id="returnTime">
+                <input type="datetime-local" id="returnTime" onchange="calculateAllowancePreview()">
             </div>
+        </div>
+
+        <!-- Podgląd wyliczonej diety -->
+        <div id="allowancePreviewBox" style="background: #e8f8f5; border: 1px solid #a3e4d7; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; color: #0e6655;">
+            <strong>Szacowana dieta krajowa:</strong> <span id="previewAllowanceText">0.00 zł</span> (kalkulacja na bieżąco)
         </div>
 
         <!-- Cel i Praca -->
@@ -323,17 +331,17 @@
         </div>
     </div>
 
-    <!-- WYNIKI / WYGENEROWANE E-MAILERE -->
+    <!-- WYNIKI -->
     <div class="card results-container" id="results-card">
         <h2>Wygenerowane Protokoły E-mail (Dla Kierownika)</h2>
-        <p style="font-size: 14px; color: #666;">Dla każdego uczestnika wygenerowano osobny protokół. Załączniki (faktury) zostały powiązane z wiadomościami:</p>
+        <p style="font-size: 14px; color: #666;">Protokoły zostały przygotowane. Jeśli dołączyłeś plik, system dołączył go bezpośrednio do wiadomości (tam gdzie wspiera to klient poczty) lub wskazał jako załącznik:</p>
         
         <div id="emailsContainer"></div>
 
         <button type="button" class="secondary" onclick="resetForm()" style="margin-top: 15px;">← Wróć do formularza / Nowa delegacja</button>
     </div>
 
-    <!-- HISTORIA DELEGACJI -->
+    <!-- HISTORIA -->
     <div class="card history-container" id="history-card">
         <h2>Historia Delegacji</h2>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -351,8 +359,7 @@
 </div>
 
 <script>
-    // ZMIANA KLUCZA BAZY DANYCH - wymusza usunięcie błędów i załadowanie świeżych danych
-    const STORAGE_KEY = 'rckik_app_data_v2';
+    const STORAGE_KEY = 'rckik_app_data_v3';
 
     const defaultData = {
         locations: [
@@ -372,8 +379,6 @@
     };
 
     let appData;
-    
-    // Bezpieczne ładowanie danych
     try {
         const savedStr = localStorage.getItem(STORAGE_KEY);
         if (savedStr) {
@@ -396,7 +401,7 @@
     }
 
     function resetToDefaults() {
-        if (confirm('Czy na pewno chcesz zresetować lokalizacje, samochody i pracowników do stanu domyślnego? (Historia zostanie zachowana)')) {
+        if (confirm('Czy na pewno chcesz zresetować lokalizacje, samochody i pracowników do stanu domyślnego?')) {
             appData.locations = [...defaultData.locations];
             appData.vehicles = [...defaultData.vehicles];
             appData.employees = [...defaultData.employees];
@@ -412,6 +417,7 @@
         renderEmployees();
         setDefaultDates();
         populateFilterDropdown();
+        calculateAllowancePreview();
     }
 
     function setDefaultDates() {
@@ -450,25 +456,50 @@
     }
 
     function renderEmployees() {
-        const container = document.getElementById('employeesCheckboxGroup');
+        const container = document.getElementById('participantsGroup');
         if (!container) return;
         container.innerHTML = '';
+        
         appData.employees.forEach((emp, index) => {
             const row = document.createElement('div');
-            row.className = 'employee-row';
+            row.className = 'participant-row';
             row.innerHTML = `
-                <div class="employee-info">
-                    <input type="checkbox" name="employeeCheckbox" value="${emp.name}" data-email="${emp.email}" id="emp_${index}" style="width:18px; height:18px; cursor:pointer;">
-                    <label for="emp_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div title="Kto wypełnia ten protokół?" style="font-size:12px; color:#c0392b; font-weight:600;">
+                        Wypełnia: <input type="radio" name="authorRadio" value="${emp.name}" data-email="${emp.email}" ${index === 0 ? 'checked' : ''} style="cursor:pointer;" onchange="updateParticipantRoles()">
+                    </div>
+                    <div title="Współuczestnik wyjazdu">
+                        Towarzyszy: <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}" style="cursor:pointer;">
+                    </div>
+                    <label for="co_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
                         <b>${emp.name}</b> <span style="font-size:11px; color:#888;">(${emp.email})</span>
                     </label>
                 </div>
                 <div class="file-input-container">
                     <label for="file_${index}" style="font-size:12px; margin:0; color:#555;">Rachunek/Faktura:</label>
-                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="max-width: 220px;">
+                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="max-width: 200px;">
                 </div>
             `;
             container.appendChild(row);
+        });
+        updateParticipantRoles();
+    }
+
+    // Blokuje zaznaczenie tej samej osoby jako autora i towarzysza jednocześnie
+    function updateParticipantRoles() {
+        const authorRadios = document.querySelectorAll('input[name="authorRadio"]');
+        let selectedAuthor = "";
+        authorRadios.forEach(r => { if (r.checked) selectedAuthor = r.value; });
+
+        document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
+            if (cb.value === selectedAuthor) {
+                cb.checked = false;
+                cb.disabled = true;
+                cb.parentElement.style.opacity = '0.4';
+            } else {
+                cb.disabled = false;
+                cb.parentElement.style.opacity = '1';
+            }
         });
     }
 
@@ -526,6 +557,47 @@
         alert('Dodano pracownika!');
     }
 
+      // Kalkulacja diety krajowej (stawka bazowa 45 zł za dobę) wg przepisów
+    function calculateAllowance(depStr, retStr) {
+        if (!depStr || !retStr) return 0;
+        const start = new Date(depStr);
+        const end = new Date(retStr);
+        const diffMs = end - start;
+        if (diffMs <= 0) return 0;
+
+        const totalHours = diffMs / (1000 * 60 * 60);
+        const dailyRate = 45.0; // Urzędowa stawka diety krajowej w PLN
+
+        if (totalHours < 24) {
+            // DELEGACJA PONIŻEJ 24 GODZIN
+            if (totalHours < 8) return 0;
+            if (totalHours <= 12) return dailyRate * 0.5; // 8 - 12h: połowa diety
+            return dailyRate; // ponad 12h: pełna dieta
+        } else {
+            // DELEGACJA POWYŻEJ 24 GODZIN
+            const fullDays = Math.floor(totalHours / 24);
+            const remainderHours = totalHours % 24;
+
+            let allowance = fullDays * dailyRate;
+
+            if (remainderHours > 0) {
+                if (remainderHours <= 8) {
+                    allowance += dailyRate * 0.5; // końcówka do 8 godzin: połowa diety
+                } else {
+                    allowance += dailyRate; // końcówka ponad 8 godzin: pełna dieta
+                }
+            }
+
+        return allowance;
+    }
+
+    function calculateAllowancePreview() {
+        const dep = document.getElementById('departureTime').value;
+        const ret = document.getElementById('returnTime').value;
+        const allowance = calculateAllowance(dep, ret);
+        document.getElementById('previewAllowanceText').textContent = allowance.toFixed(2) + ' zł';
+    }
+
     function generateProtocols() {
         const location = document.getElementById('locationSelect').value;
         const vehicle = document.getElementById('vehicleSelect').value;
@@ -534,19 +606,54 @@
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
 
-        const checkboxes = document.querySelectorAll('input[name="employeeCheckbox"]:checked');
-        if (checkboxes.length === 0) {
-            alert('Musisz zaznaczyć przynajmniej jednego uczestnika delegacji!');
+        const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
+        if (!authorRadio) {
+            alert('Wskaż, kto wypełnia protokół!');
             return;
         }
+
+        const authorName = authorRadio.value;
+        const authorEmail = authorRadio.getAttribute('data-email');
+
+        const coCheckboxes = document.querySelectorAll('input[name="coParticipantCheckbox"]:checked');
+        const coParticipants = Array.from(coCheckboxes).map(cb => cb.value);
+        const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
 
         if (!departure || !returnT) {
             alert('Proszę uzupełnić datę i godzinę wyjazdu oraz powrotu.');
             return;
         }
 
-        const emailsContainer = document.getElementById('emailsContainer');
-        emailsContainer.innerHTML = '';
+        const allowanceAmount = calculateAllowance(departure, returnT);
+
+        // Sprawdź plik autora
+        const fileInput = document.querySelector(`input[type="file"][data-emp="${authorName}"]`);
+        let fileName = 'Brak załącznika';
+        let fileObj = null;
+        if (fileInput && fileInput.files.length > 0) {
+            fileObj = fileInput.files[0];
+            fileName = fileObj.name;
+        }
+
+        const emailSubject = `${location} - ${authorName}`;
+        
+        const emailBody = `Szanowny Panie Kierowniku,
+
+Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
+
+• Uczestnik delegacji (zgłaszający): ${authorName}
+• Współuczestnicy wyjazdu: ${coParticipantsStr}
+• Lokalizacja docelowa: ${location}
+• Wykorzystany pojazd: ${vehicle}
+• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
+• Data i godzina powrotu: ${returnT.replace('T', ' ')}
+• Cel delegacji: ${purpose || 'Nie podano'}
+• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
+• Wyliczona dieta krajowa: ${allowanceAmount.toFixed(2)} PLN
+• Załącznik (rachunek/faktura): ${fileName}
+
+Z poważaniem,
+${authorName}`;
 
         const delegationRecord = {
             id: Date.now(),
@@ -556,67 +663,33 @@
             departure: departure.replace('T', ' '),
             return: returnT.replace('T', ' '),
             purpose: purpose || 'Brak',
-            participants: []
+            author: authorName,
+            coParticipants: coParticipantsStr,
+            allowance: allowanceAmount.toFixed(2) + ' zł',
+            attachment: fileName
         };
-
-        for (const cb of checkboxes) {
-            const empName = cb.value;
-            const empEmail = cb.getAttribute('data-email');
-            
-            const fileInput = document.querySelector(`input[type="file"][data-emp="${empName}"]`);
-            let fileName = 'Brak załącznika';
-            if (fileInput && fileInput.files.length > 0) {
-                fileName = fileInput.files[0].name;
-            }
-
-            const allCheckboxes = Array.from(checkboxes);
-            const coParticipants = allCheckboxes.map(c => c.value).filter(n => n !== empName);
-            const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
-
-            const emailSubject = `${location} - ${empName}`;
-            
-            const emailBody = `Szanowny Panie Kierowniku,
-
-Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
-
-• Uczestnik delegacji (zgłaszający): ${empName}
-• Współuczestnicy wyjazdu: ${coParticipantsStr}
-• Lokalizacja docelowa: ${location}
-• Wykorzystany pojazd: ${vehicle}
-• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
-• Data i godzina powrotu: ${returnT.replace('T', ' ')}
-• Cel delegacji: ${purpose || 'Nie podano'}
-• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
-• Załącznik (rachunek/faktura): ${fileName}
-
-Z poważaniem,
-${empName}`;
-
-            delegationRecord.participants.push({
-                name: empName,
-                email: empEmail,
-                attachment: fileName
-            });
-
-            const emailDiv = document.createElement('div');
-            emailDiv.className = 'email-preview';
-            emailDiv.innerHTML = `
-                <div class="email-header">
-                    E-mail do: <span style="color:var(--primary-color);">${empEmail}</span> (Pracownik: <b>${empName}</b>)
-                    <span class="badge" style="float: right;">Załącznik: ${fileName}</span>
-                </div>
-                <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
-                <div class="email-body">${emailBody}</div>
-                <div class="actions-row">
-                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
-                    <a href="mailto:${empEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
-                </div>
-            `;
-            emailsContainer.appendChild(emailDiv);
-        }
 
         appData.history.unshift(delegationRecord);
         saveAppData();
+
+        const emailsContainer = document.getElementById('emailsContainer');
+        emailsContainer.innerHTML = '';
+
+        const emailDiv = document.createElement('div');
+        emailDiv.className = 'email-preview';
+        emailDiv.innerHTML = `
+            <div class="email-header">
+                E-mail do: <span style="color:var(--primary-color);">${authorEmail}</span> (Wypełnia: <b>${authorName}</b>)
+                <span class="badge" style="float: right;">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
+            </div>
+            <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
+            <div class="email-body">${emailBody}</div>
+            <div class="actions-row">
+                <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
+                <a href="mailto:${authorEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
+            </div>
+        `;
+        emailsContainer.appendChild(emailDiv);
 
         document.getElementById('form-card').style.display = 'none';
         document.getElementById('results-card').style.display = 'block';
@@ -669,7 +742,7 @@ ${empName}`;
         let filteredHistory = appData.history;
         if (filterEmp) {
             filteredHistory = appData.history.filter(item => 
-                item.participants.some(p => p.name === filterEmp)
+                item.author === filterEmp || item.coParticipants.includes(filterEmp)
             );
         }
 
@@ -683,24 +756,23 @@ ${empName}`;
                 <thead>
                     <tr>
                         <th>Data utworzenia</th>
-                        <th>Lokalizacja</th>
-                        <th>Pojazd</th>
-                        <th>Termin wyjazdu / powrotu</th>
-                        <th>Uczestnicy i Rachunki</th>
+                        <th>Autor / Współuczestnicy</th>
+                        <th>Lokalizacja i Pojazd</th>
+                        <th>Termin / Dieta</th>
+                        <th>Załącznik</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
 
         filteredHistory.forEach(item => {
-            const participantsList = item.participants.map(p => `• <b>${p.name}</b> (Plik: ${p.attachment})`).join('<br>');
             html += `
                 <tr>
                     <td>${item.dateCreated}</td>
-                    <td><b>${item.location}</b><br><small style="color:#666;">Cel: ${item.purpose}</small></td>
-                    <td>${item.vehicle}</td>
-                    <td>${item.departure} <br>do<br> ${item.return}</td>
-                    <td>${participantsList}</td>
+                    <td><b>Zgłaszający:</b> ${item.author}<br><small style="color:#666;">Z kim: ${item.coParticipants}</small></td>
+                    <td><b>${item.location}</b><br><small style="color:#666;">Pojazd: ${item.vehicle}</small></td>
+                    <td>${item.departure} do ${item.return}<br><b>Dieta: ${item.allowance}</b></td>
+                    <td>${item.attachment}</td>
                 </tr>
             `;
         });
@@ -721,6 +793,7 @@ ${empName}`;
         switchTab('form');
         setDefaultDates();
         renderEmployees();
+        calculateAllowancePreview();
     }
 
     window.onload = initApp;
