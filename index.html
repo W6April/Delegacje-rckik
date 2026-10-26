@@ -26,6 +26,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 12px;
+            overflow-x: hidden;
         }
 
         .container { max-width: 950px; margin: 0 auto; width: 100%; }
@@ -55,6 +56,9 @@
         button.secondary:hover { background-color: #616a6b; }
         button.cloud-btn { background-color: #2980b9; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; border-radius: 8px;}
         button.cloud-btn:hover { background-color: #2471a3; }
+        
+        .btn-icon-delete { background: transparent; color: #e74c3c; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-delete:hover { transform: scale(1.1); }
 
         .participants-container { display: flex; flex-direction: column; gap: 10px; background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; }
         .participant-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px; }
@@ -96,7 +100,7 @@
 </head>
 <body>
 
-<div class="container">
+<div class="container" id="mainContainer">
     <header>
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
@@ -199,7 +203,10 @@
                     <option value="">Wszyscy pracownicy</option>
                 </select>
             </div>
-            <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść całą historię</button>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" id="btnDeleteFiltered" class="secondary" style="display: none; background-color: #e67e22; font-size: 12px; padding: 5px 10px;" onclick="clearFilteredHistory()">Usuń wyfiltrowane</button>
+                <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść wszystko</button>
+            </div>
         </div>
         <div class="table-responsive">
             <div id="historyTableContainer"></div>
@@ -286,6 +293,7 @@
         renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
         setDefaultDates(); populateFilterDropdown(); calculateAllowancePreview();
         updateSyncDateUI();
+        initSwipeGestures();
     }
 
     function updateSyncDateUI() {
@@ -327,7 +335,7 @@
                 <div style="flex: 1; min-width: 150px;"><b style="font-size: 14px;">${emp.name}</b></div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <label style="font-size:12px; color:#c0392b; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                        <input type="radio" name="authorRadio" value="${emp.name}" ${index === 0 ? 'checked' : ''} onchange="updateParticipantRoles()"> Wypełnia
+                        <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()"> Wypełnia
                     </label>
                     <label style="font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
                         <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}"> Towarzyszy
@@ -368,21 +376,26 @@
     }
 
     function updateParticipantRoles() {
-        const selectedAuthor = Array.from(document.querySelectorAll('input[name="authorRadio"]')).find(r => r.checked)?.value;
+        const selectedAuthorRadio = Array.from(document.querySelectorAll('input[name="authorRadio"]')).find(r => r.checked);
+        const selectedAuthor = selectedAuthorRadio ? selectedAuthorRadio.value : "";
+        
         document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-            if (cb.value === selectedAuthor) { cb.checked = false; cb.disabled = true; cb.parentElement.style.opacity = '0.4'; } 
-            else { cb.disabled = false; cb.parentElement.style.opacity = '1'; }
+            if (cb.value === selectedAuthor && selectedAuthor !== "") { 
+                cb.checked = false; cb.disabled = true; cb.parentElement.style.opacity = '0.4'; 
+            } else { 
+                cb.disabled = false; cb.parentElement.style.opacity = '1'; 
+            }
         });
     }
 
     function populateFilterDropdown() {
         const sel = document.getElementById('filterEmployee'); if (!sel) return;
-        const currentVal = sel.value; // Zapisz aktualny wybór przed odświeżeniem
+        const currentVal = sel.value; 
         sel.innerHTML = '<option value="">Wszyscy pracownicy</option>';
         appData.employees.forEach(emp => {
             const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name + (emp.hidden ? ' (wygaszony)' : ''); sel.appendChild(opt);
         });
-        sel.value = currentVal; // Przywróć wybór
+        sel.value = currentVal; 
     }
 
     function addLocation() {
@@ -450,7 +463,7 @@
 
     function generateProtocols() {
         const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
-        if (!authorRadio) return alert('Wskaż, kto wypełnia protokół!');
+        if (!authorRadio) return alert('Musisz zaznaczyć, kto wypełnia ten protokół!');
         const departure = document.getElementById('departureTime').value;
         const returnT = document.getElementById('returnTime').value;
         if (!departure || !returnT) return alert('Uzupełnij daty wyjazdu i powrotu.');
@@ -556,7 +569,7 @@ ${authorName}`;
         } else if (tab === 'history') { 
             document.getElementById('history-card').style.display = 'block'; 
             document.getElementById('tabHistoryBtn').classList.add('active'); 
-            populateFilterDropdown(); // Odśwież listę filtrowania
+            populateFilterDropdown(); 
             renderHistory(); 
         } else if (tab === 'cloud') { 
             document.getElementById('cloud-card').style.display = 'block'; 
@@ -568,9 +581,18 @@ ${authorName}`;
     }
 
     function renderHistory() {
-        const container = document.getElementById('historyTableContainer'); const filterEmp = document.getElementById('filterEmployee').value;
+        const container = document.getElementById('historyTableContainer'); 
+        const filterEmp = document.getElementById('filterEmployee').value;
+        const btnDeleteFiltered = document.getElementById('btnDeleteFiltered');
+        
         let hist = appData.history;
-        if (filterEmp) hist = hist.filter(i => i.author === filterEmp || i.coParticipants.includes(filterEmp));
+        if (filterEmp) {
+            hist = hist.filter(i => i.author === filterEmp || i.coParticipants.includes(filterEmp));
+            btnDeleteFiltered.style.display = 'inline-block';
+        } else {
+            btnDeleteFiltered.style.display = 'none';
+        }
+        
         if (hist.length === 0) return container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii do wyświetlenia.</p>';
 
         let html = `<table class="history-table"><thead><tr><th>Data</th><th>Osoby</th><th>Lokalizacja/Pojazd</th><th>Termin/Dieta</th><th>Akcje</th></tr></thead><tbody>`;
@@ -580,8 +602,8 @@ ${authorName}`;
                 <td><b>Zgłasza:</b> ${i.author}<br><small>Z kim: ${i.coParticipants}</small></td>
                 <td><b>${i.location}</b><br><small>${i.vehicle}</small></td>
                 <td>${i.departure} - ${i.return}<br><b>${i.allowance}</b></td>
-                <td style="text-align: center;">
-                    <button type="button" class="secondary" style="background:#e74c3c; padding: 6px 10px; font-size: 11px;" onclick="deleteHistoryItem(${i.id})">Usuń</button>
+                <td style="text-align: center; vertical-align: middle;">
+                    <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
                 </td>
             </tr>`;
         });
@@ -589,14 +611,29 @@ ${authorName}`;
     }
 
     function deleteHistoryItem(id) {
-        if (confirm('Czy na pewno chcesz usunąć ten protokół z historii?')) {
+        if (confirm('Czy na pewno chcesz usunąć ten pojedynczy raport z historii?')) {
             appData.history = appData.history.filter(item => item.id !== id);
             saveAppData();
             renderHistory();
         }
     }
 
-    function clearHistory() { if (confirm('Czy wyczyścić CAŁĄ historię?')) { appData.history = []; saveAppData(); renderHistory(); } }
+    function clearHistory() { 
+        if (confirm('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników?')) { 
+            appData.history = []; saveAppData(); renderHistory(); 
+        } 
+    }
+    
+    function clearFilteredHistory() {
+        const filterEmp = document.getElementById('filterEmployee').value;
+        if (!filterEmp) return;
+        if (confirm(`Czy usunąć bezpowrotnie WSZYSTKIE raporty powiązane z pracownikiem: ${filterEmp}?`)) {
+            appData.history = appData.history.filter(i => !(i.author === filterEmp || i.coParticipants.includes(filterEmp)));
+            saveAppData();
+            renderHistory();
+        }
+    }
+    
     function resetForm() { switchTab('form'); setDefaultDates(); calculateAllowancePreview(); }
     function resetToDefaults() {
         if (confirm('Czy na pewno chcesz zresetować słowniki?')) {
@@ -642,6 +679,56 @@ ${authorName}`;
             } else { alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); }
         } catch(e) { alert("Błąd połączenia z internetem."); }
         btn.textContent = "⬇️ POBIERZ AKTUALNĄ BAZĘ";
+    }
+
+    // --- OBSŁUGA GESTÓW (SWIPE) DO PRZEŁĄCZANIA ZAKŁADEK ---
+    function initSwipeGestures() {
+        let touchstartX = 0;
+        let touchendX = 0;
+        let touchstartY = 0;
+        let touchendY = 0;
+
+        const mainContainer = document.getElementById('mainContainer');
+
+        mainContainer.addEventListener('touchstart', e => {
+            // Ignorowanie gestów podczas interakcji z polami tekstowymi lub selektorami
+            if(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
+            touchstartX = e.changedTouches[0].screenX;
+            touchstartY = e.changedTouches[0].screenY;
+        }, {passive: true});
+
+        mainContainer.addEventListener('touchend', e => {
+            if(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
+            touchendX = e.changedTouches[0].screenX;
+            touchendY = e.changedTouches[0].screenY;
+            handleSwipe();
+        }, {passive: true});
+
+        function handleSwipe() {
+            const swipeThreshold = 60; // minimalna długość przesunięcia w poziomie
+            const verticalThreshold = 60; // maksymalna dopuszczalna długość przesunięcia w pionie (zapobiega zmianie przy przewijaniu góra-dół)
+            
+            if (Math.abs(touchstartX - touchendX) < swipeThreshold) return;
+            if (Math.abs(touchstartY - touchendY) > verticalThreshold) return;
+
+            const tabs = ['form', 'history', 'cloud'];
+            let currentTab = 'form';
+            if (document.getElementById('tabHistoryBtn').classList.contains('active')) currentTab = 'history';
+            if (document.getElementById('tabCloudBtn').classList.contains('active')) currentTab = 'cloud';
+            
+            // Nie przełączaj zakładek, gdy użytkownik jest na ekranie wygenerowanego protokołu (wyników)
+            if (document.getElementById('results-card').style.display === 'block') return;
+
+            let currentIndex = tabs.indexOf(currentTab);
+            if (currentIndex === -1) return;
+
+            if (touchendX < touchstartX) { // Swipe w lewo (następna zakładka)
+                if (currentIndex < tabs.length - 1) switchTab(tabs[currentIndex + 1]);
+            }
+            if (touchendX > touchstartX) { // Swipe w prawo (poprzednia zakładka)
+                if (currentIndex > 0) switchTab(tabs[currentIndex - 1]);
+            }
+        }
     }
 
     window.onload = initApp;
