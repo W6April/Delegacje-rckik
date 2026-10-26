@@ -83,6 +83,15 @@
         .manage-item:last-child { border-bottom: none; }
         
         .sync-info { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 15px; border-radius: 8px; font-size: 14px; color: #0e6655; margin-bottom: 20px; text-align: center;}
+        
+        .btn-email {
+            display: inline-flex; align-items: center; gap: 6px;
+            background-color: #2980b9; color: white !important; 
+            padding: 10px 16px; text-decoration: none; 
+            border-radius: 4px; font-weight: 600; font-size: 14px; 
+            transition: background-color 0.2s;
+        }
+        .btn-email:hover { background-color: #2471a3; }
     </style>
 </head>
 <body>
@@ -224,7 +233,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v12';
+    const STORAGE_KEY = 'rckik_app_data_v13';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -413,6 +422,25 @@
         }
     }
 
+    function calculateDurationString(depStr, retStr) {
+        if (!depStr || !retStr) return 'Brak danych';
+        const start = new Date(depStr);
+        const end = new Date(retStr);
+        const diffMs = end - start;
+        if (diffMs <= 0) return '0 godz. 0 min.';
+        
+        const totalMins = Math.floor(diffMs / (1000 * 60));
+        const days = Math.floor(totalMins / (24 * 60));
+        const hours = Math.floor((totalMins % (24 * 60)) / 60);
+        const mins = totalMins % 60;
+        
+        if (days > 0) {
+            return `${days} dni, ${hours} godz. ${mins} min.`;
+        } else {
+            return `${hours} godz. ${mins} min.`;
+        }
+    }
+
     function calculateAllowancePreview() {
         const dep = document.getElementById('departureTime').value; const ret = document.getElementById('returnTime').value;
         document.getElementById('previewAllowanceText').textContent = calculateAllowance(dep, ret).toFixed(2) + ' zł';
@@ -431,7 +459,9 @@
         const vehicle = document.getElementById('vehicleSelect').value;
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
+        
         const allowanceAmount = calculateAllowance(departure, returnT);
+        const durationStr = calculateDurationString(departure, returnT);
         
         const fileInput = document.querySelector(`input[type="file"][data-emp="${authorName}"]`);
         const fileName = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : 'Brak załącznika';
@@ -439,7 +469,7 @@
         const emailSubject = `${location} - ${authorName}`;
         const emailBody = `Szanowny Panie Kierowniku,
 
-Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły delegacji:
+Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 
 • Zgłaszający (wypełniający):
   ${authorName}
@@ -458,6 +488,9 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczeni
 
 • Termin powrotu:
   ${returnT.replace('T', ' ')}
+
+• Łączny czas trwania:
+  ${durationStr}
 
 • Cel delegacji:
   ${purpose || 'Nie podano'}
@@ -492,7 +525,9 @@ ${authorName}`;
                 <div class="email-body">${emailBody}</div>
                 <div class="actions-row">
                     <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
-                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij e-mail ✉</a>
+                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email">
+                        ✉️ Wyślij e-mail
+                    </a>
                 </div>
             </div>
         `;
