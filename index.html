@@ -18,9 +18,7 @@
             --border-color: #dcdde1;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -36,22 +34,9 @@
             width: 100%;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        header h1 {
-            color: var(--primary-color);
-            margin-bottom: 5px;
-            font-size: 1.6rem;
-        }
-
-        header p {
-            color: #666;
-            margin-top: 0;
-            font-size: 0.9rem;
-        }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { color: var(--primary-color); margin-bottom: 5px; font-size: 1.6rem; }
+        header p { color: #666; margin-top: 0; font-size: 0.9rem; }
 
         .card {
             background: var(--card-bg);
@@ -69,253 +54,70 @@
             margin-top: 0;
         }
 
-        .form-group {
-            margin-bottom: 15px;
-            width: 100%;
+        .form-group { margin-bottom: 15px; width: 100%; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color);
+            border-radius: 4px; font-size: 14px; max-width: 100%;
         }
+        textarea { resize: vertical; height: 90px; }
 
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
+        .date-inputs-row { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; }
+        .date-inputs-row .form-group { flex: 1 1 250px; }
 
-        input[type="text"],
-        input[type="datetime-local"],
-        select,
-        textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-            max-width: 100%;
-        }
-
-        textarea {
-            resize: vertical;
-            height: 90px;
-        }
-
-        .date-inputs-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            width: 100%;
-        }
-
-        .date-inputs-row .form-group {
-            flex: 1 1 250px;
-        }
-
-        .inline-add {
-            display: flex;
-            gap: 8px;
-            margin-top: 5px;
-        }
+        .inline-add { display: flex; gap: 8px; margin-top: 5px; }
 
         button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: background-color 0.2s;
-            white-space: nowrap;
+            background-color: var(--primary-color); color: white; border: none;
+            padding: 10px 15px; border-radius: 4px; cursor: pointer;
+            font-weight: 600; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;
         }
-
-        button:hover {
-            background-color: var(--primary-hover);
-        }
-
-        button.secondary {
-            background-color: #7f8c8d;
-        }
-        button.secondary:hover {
-            background-color: #616a6b;
-        }
+        button:hover { background-color: var(--primary-hover); }
+        button.secondary { background-color: #7f8c8d; }
+        button.secondary:hover { background-color: #616a6b; }
+        button.cloud-btn { background-color: #2980b9; width: 100%; padding: 14px; margin-bottom: 10px; font-size: 15px;}
+        button.cloud-btn:hover { background-color: #2471a3; }
 
         .participants-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #fafafa;
-            padding: 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            display: flex; flex-direction: column; gap: 10px;
+            background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px;
         }
 
         .participant-row {
-            display: flex;
-            flex-direction: column;
-            background: #fff;
-            padding: 10px;
-            border: 1px solid #e1e1e1;
-            border-radius: 4px;
-            gap: 8px;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+            background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px;
         }
 
-        .participant-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .file-input-container {
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .file-input-container input[type="file"] {
-            font-size: 12px;
-            max-width: 100%;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        .results-container, .history-container {
-            display: none;
-        }
+        .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
+        .results-container, .history-container, .cloud-container { display: none; }
 
         .email-preview {
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--primary-color);
-            padding: 18px;
-            margin-bottom: 15px;
-            border-radius: 4px;
+            background: #fff; border: 1px solid var(--border-color);
+            border-left: 5px solid var(--primary-color); padding: 18px; margin-bottom: 15px; border-radius: 4px;
         }
-
-        .email-header {
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 8px;
-            word-break: break-all;
-        }
-
+        .email-header { font-weight: bold; color: #2c3e50; margin-bottom: 12px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
         .email-body {
-            white-space: pre-wrap;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            line-height: 1.6;
-            overflow-x: auto;
-            border: 1px solid #edf0f2;
+            white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa; padding: 15px; border-radius: 4px; font-size: 14px; line-height: 1.6; border: 1px solid #edf0f2;
         }
+        .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px; }
+        .badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
-        .actions-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; min-width: 500px; }
+        .history-table th, .history-table td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; }
+        .history-table th { background-color: #f1f2f6; }
+
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .nav-tabs button { flex: 1; background: #e4e7eb; color: #333; padding: 10px 5px; font-size: 13px; min-width: 100px;}
+        .nav-tabs button.active { background: var(--primary-color); color: white; }
+
+        .app-footer { text-align: center; margin-top: 25px; font-size: 12px; color: #888; }
+        .manage-box { display: none; background: #f1f2f6; border: 1px solid #ced6e0; padding: 12px; border-radius: 6px; margin-top: 10px; }
+        .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
+        .manage-item:last-child { border-bottom: none; }
         
-        .badge {
-            background: #e1f5fe;
-            color: #0288d1;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            display: inline-block;
-            margin-top: 4px;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            margin-top: 10px;
-            min-width: 500px;
-        }
-
-        .history-table th, .history-table td {
-            border: 1px solid var(--border-color);
-            padding: 8px 10px;
-            text-align: left;
-        }
-
-        .history-table th {
-            background-color: #f1f2f6;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .nav-tabs button {
-            flex: 1;
-            background: #e4e7eb;
-            color: #333;
-            padding: 10px 5px;
-            font-size: 13px;
-        }
-
-        .nav-tabs button.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .app-footer {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 12px;
-            color: #888;
-        }
-
-        .manage-box {
-            display: none;
-            background: #f1f2f6;
-            border: 1px solid #ced6e0;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-
-        .manage-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid #e4e7eb;
-            font-size: 13px;
-        }
-        .manage-item:last-child {
-            border-bottom: none;
-        }
-
-        @media (min-width: 650px) {
-            .participant-row {
-                flex-direction: row;
-                justify-content: space-between;
-            }
-        }
+        .sync-info { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 12px; border-radius: 4px; font-size: 14px; color: #0e6655; margin-bottom: 15px; text-align: center;}
     </style>
 </head>
 <body>
@@ -329,13 +131,13 @@
     <div class="nav-tabs">
         <button type="button" id="tabFormBtn" class="active" onclick="switchTab('form')">Nowa Delegacja</button>
         <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia Delegacji</button>
+        <button type="button" id="tabCloudBtn" onclick="switchTab('cloud')">☁️ Chmura</button>
     </div>
 
     <!-- FORMULARZ DELEGACJI -->
     <div class="card" id="form-card">
         <h2>Nowa Delegacja</h2>
         
-        <!-- Lokalizacja -->
         <div class="form-group">
             <label for="locationSelect">Lokalizacja RCKiK / WCKiK:</label>
             <select id="locationSelect"></select>
@@ -345,7 +147,6 @@
             </div>
         </div>
 
-        <!-- Samochód -->
         <div class="form-group">
             <label for="vehicleSelect">Samochód:</label>
             <select id="vehicleSelect"></select>
@@ -355,10 +156,9 @@
             </div>
         </div>
 
-        <!-- Uczestnicy -->
         <div class="form-group">
             <label>Uczestnicy delegacji:</label>
-            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b> (współuczestnicy). 3. Opcjonalnie dodaj rachunek/fakturę.</p>
+            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b> (współuczestnicy).</p>
             <div class="participants-container" id="participantsGroup"></div>
             
             <div class="inline-add" style="margin-top: 10px;">
@@ -366,7 +166,6 @@
                 <button type="button" onclick="addEmployee()">Dodaj pracownika</button>
             </div>
 
-            <!-- Panel wygaszania/zarządzania pracownikami -->
             <div style="margin-top: 8px;">
                 <button type="button" class="secondary" onclick="toggleManageEmployees()" style="font-size: 12px; padding: 6px 12px;">⚙ Zarządzaj widocznością pracowników</button>
             </div>
@@ -376,7 +175,6 @@
             </div>
         </div>
 
-        <!-- Daty i godziny -->
         <div class="date-inputs-row">
             <div class="form-group">
                 <label for="departureTime">Data i godzina wyjazdu:</label>
@@ -388,12 +186,10 @@
             </div>
         </div>
 
-        <!-- Podgląd wyliczonej diety -->
         <div id="allowancePreviewBox" style="background: #e8f8f5; border: 1px solid #a3e4d7; padding: 12px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; color: #0e6655;">
-            <strong>Szacowana dieta krajowa:</strong> <span id="previewAllowanceText">0.00 zł</span> (kalkulacja na bieżąco wg stawki 45 zł)
+            <strong>Szacowana dieta krajowa:</strong> <span id="previewAllowanceText">0.00 zł</span>
         </div>
 
-        <!-- Cel i Praca -->
         <div class="form-group">
             <label for="delegationPurpose">Cel delegacji:</label>
             <input type="text" id="delegationPurpose" placeholder="np. Transport preparatów krwi / Spotkanie robocze">
@@ -413,12 +209,10 @@
 
     <!-- WYNIKI -->
     <div class="card results-container" id="results-card">
-        <h2>Wygenerowany Protokół E-mail (Dla Kierownika)</h2>
+        <h2>Wygenerowany Protokół E-mail</h2>
         <p style="font-size: 14px; color: #666;">Protokół został przygotowany i zaadresowany do kierownika:</p>
-        
         <div id="emailsContainer"></div>
-
-        <button type="button" class="secondary" onclick="resetForm()" style="margin-top: 15px;">← Wróć do formularza / Nowa delegacja</button>
+        <button type="button" class="secondary" onclick="resetForm()" style="margin-top: 15px;">← Wróć do formularza</button>
     </div>
 
     <!-- HISTORIA -->
@@ -436,17 +230,45 @@
         <div class="table-responsive">
             <div id="historyTableContainer"></div>
         </div>
-        <button type="button" class="secondary" onclick="switchTab('form')" style="margin-top: 15px;">← Powrót do formularza</button>
     </div>
 
-    <!-- DATA OSTATNIEJ AKTUALIZACJI -->
+    <!-- CHMURA -->
+    <div class="card cloud-container" id="cloud-card">
+        <h2>☁️ Synchronizacja z chmurą</h2>
+        <p style="font-size: 13px; color: #555;">Dzięki chmurze wszyscy pracownicy mogą współdzielić bazę samochodów, lokalizacji oraz historię wyjazdów. Aplikacja wykorzystuje darmowe API JSONBin.io.</p>
+        
+        <div class="sync-info" id="syncStatusUI">
+            Ostatnia synchronizacja: <b>Brak danych</b>
+        </div>
+
+        <div class="form-group">
+            <label>ID Bazy (Bin ID):</label>
+            <input type="text" id="cloudBinId" placeholder="Wklej Bin ID (np. 6561a3...)">
+        </div>
+        <div class="form-group">
+            <label>Klucz API (Master Key):</label>
+            <input type="password" id="cloudApiKey" placeholder="Wklej X-Master-Key">
+        </div>
+
+        <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">Wyślij bieżące dane do chmury ⬆️</button>
+        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">Pobierz dane z chmury ⬇️</button>
+
+        <div style="margin-top: 20px; font-size: 12px; color: #777; background: #f9f9f9; padding: 10px; border-radius: 4px;">
+            <b>Jak to działa?</b><br>
+            1. Zaloguj się na jsonbin.io i utwórz nowy Bin z pustymi klamrami {}.<br>
+            2. Skopiuj wygenerowany <b>Bin ID</b> oraz <b>Master Key</b> (z zakładki API Keys).<br>
+            3. Wklej je powyżej. Od tego momentu po dodaniu samochodu kliknij "Wyślij", a reszta zespołu kliknie "Pobierz", by go zobaczyć.
+        </div>
+    </div>
+
+    <!-- STOPKA -->
     <div class="app-footer">
         Ostatnia aktualizacja: 26 października 2026
     </div>
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v9';
+    const STORAGE_KEY = 'rckik_app_data_v10';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -472,40 +294,36 @@
             { name: "Ignacy Kępiński", email: DEFAULT_MANAGER_EMAIL, hidden: true },
             { name: "Konrad Zbrzezny", email: DEFAULT_MANAGER_EMAIL, hidden: true }
         ],
-        history: []
+        history: [],
+        cloudSettings: { binId: '', apiKey: '', lastSync: 'Nigdy' }
     };
 
     let appData;
-    try {
-        const savedStr = localStorage.getItem(STORAGE_KEY);
-        if (savedStr) {
-            const saved = JSON.parse(savedStr);
-            appData = {
-                locations: Array.isArray(saved.locations) && saved.locations.length > 0 ? saved.locations : [...defaultData.locations],
-                vehicles: Array.isArray(saved.vehicles) && saved.vehicles.length > 0 ? saved.vehicles : [...defaultData.vehicles],
-                employees: Array.isArray(saved.employees) && saved.employees.length > 0 ? saved.employees : [...defaultData.employees],
-                history: Array.isArray(saved.history) ? saved.history : []
-            };
-        } else {
+    function loadData() {
+        try {
+            const savedStr = localStorage.getItem(STORAGE_KEY);
+            if (savedStr) {
+                const saved = JSON.parse(savedStr);
+                appData = {
+                    locations: Array.isArray(saved.locations) && saved.locations.length > 0 ? saved.locations : [...defaultData.locations],
+                    vehicles: Array.isArray(saved.vehicles) && saved.vehicles.length > 0 ? saved.vehicles : [...defaultData.vehicles],
+                    employees: Array.isArray(saved.employees) && saved.employees.length > 0 ? saved.employees : [...defaultData.employees],
+                    history: Array.isArray(saved.history) ? saved.history : [],
+                    cloudSettings: saved.cloudSettings || { binId: '', apiKey: '', lastSync: 'Nigdy' }
+                };
+            } else {
+                appData = JSON.parse(JSON.stringify(defaultData));
+            }
+        } catch (e) {
             appData = JSON.parse(JSON.stringify(defaultData));
         }
-    } catch (e) {
-        appData = JSON.parse(JSON.stringify(defaultData));
     }
+    loadData();
 
     function saveAppData() {
+        appData.cloudSettings.binId = document.getElementById('cloudBinId').value.trim();
+        appData.cloudSettings.apiKey = document.getElementById('cloudApiKey').value.trim();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    }
-
-    function resetToDefaults() {
-        if (confirm('Czy na pewno chcesz zresetować lokalizacje, samochody i pracowników do stanu domyślnego?')) {
-            appData.locations = [...defaultData.locations];
-            appData.vehicles = [...defaultData.vehicles];
-            appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
-            saveAppData();
-            initApp();
-            alert('Zresetowano słowniki pomyślnie!');
-        }
     }
 
     function initApp() {
@@ -516,6 +334,14 @@
         setDefaultDates();
         populateFilterDropdown();
         calculateAllowancePreview();
+        
+        document.getElementById('cloudBinId').value = appData.cloudSettings.binId || '';
+        document.getElementById('cloudApiKey').value = appData.cloudSettings.apiKey || '';
+        updateSyncDateUI();
+    }
+
+    function updateSyncDateUI() {
+        document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja: <b>${appData.cloudSettings.lastSync}</b>`;
     }
 
     function setDefaultDates() {
@@ -524,7 +350,6 @@
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         const todayStr = `${year}-${month}-${day}`;
-        
         document.getElementById('departureTime').value = `${todayStr}T06:00`;
         document.getElementById('returnTime').value = `${todayStr}T14:00`;
     }
@@ -559,7 +384,6 @@
         container.innerHTML = '';
         
         const visibleEmployees = appData.employees.filter(emp => !emp.hidden);
-
         if (visibleEmployees.length === 0) {
             container.innerHTML = '<div style="color:#777; font-size:13px; padding:10px;">Brak widocznych pracowników. Włącz ich w panelu zarządzania poniżej.</div>';
             return;
@@ -569,20 +393,19 @@
             const row = document.createElement('div');
             row.className = 'participant-row';
             row.innerHTML = `
-                <div class="participant-actions">
-                    <span style="font-size:12px; color:#c0392b; font-weight:600;">
-                        Wypełnia: <input type="radio" name="authorRadio" value="${emp.name}" data-email="${DEFAULT_MANAGER_EMAIL}" ${index === 0 ? 'checked' : ''} style="cursor:pointer;" onchange="updateParticipantRoles()">
-                    </span>
-                    <span style="font-size:12px;">
-                        Towarzyszy: <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}" style="cursor:pointer;">
-                    </span>
-                    <label for="co_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
-                        <b>${emp.name}</b>
+                <div style="flex: 1; min-width: 150px;">
+                    <b style="font-size: 14px;">${emp.name}</b>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <label style="font-size:12px; color:#c0392b; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
+                        <input type="radio" name="authorRadio" value="${emp.name}" data-email="${DEFAULT_MANAGER_EMAIL}" ${index === 0 ? 'checked' : ''} onchange="updateParticipantRoles()"> Wypełnia
+                    </label>
+                    <label style="font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
+                        <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}"> Towarzyszy
                     </label>
                 </div>
-                <div class="file-input-container">
-                    <label for="file_${index}" style="font-size:12px; margin:0; color:#555;">Rachunek/Faktura:</label>
-                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf">
+                <div class="file-input-container" style="flex: 1; min-width: 150px; justify-content: flex-end;">
+                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="width: 100%; max-width:200px;">
                 </div>
             `;
             container.appendChild(row);
@@ -599,7 +422,6 @@
         const container = document.getElementById('manageEmployeesList');
         if (!container) return;
         container.innerHTML = '';
-
         appData.employees.forEach((emp, index) => {
             const item = document.createElement('div');
             item.className = 'manage-item';
@@ -628,15 +450,11 @@
         const authorRadios = document.querySelectorAll('input[name="authorRadio"]');
         let selectedAuthor = "";
         authorRadios.forEach(r => { if (r.checked) selectedAuthor = r.value; });
-
         document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
             if (cb.value === selectedAuthor) {
-                cb.checked = false;
-                cb.disabled = true;
-                cb.parentElement.style.opacity = '0.4';
+                cb.checked = false; cb.disabled = true; cb.parentElement.style.opacity = '0.4';
             } else {
-                cb.disabled = false;
-                cb.parentElement.style.opacity = '1';
+                cb.disabled = false; cb.parentElement.style.opacity = '1';
             }
         });
     }
@@ -654,75 +472,43 @@
     }
 
     function addLocation() {
-        const input = document.getElementById('newLocationInput');
-        const val = input.value.trim();
-        if (!val) { alert('Wpisz nazwę lokalizacji.'); return; }
-        if (appData.locations.includes(val)) { alert('Taka lokalizacja już istnieje.'); return; }
+        const val = document.getElementById('newLocationInput').value.trim();
+        if (!val) return alert('Wpisz nazwę lokalizacji.');
+        if (appData.locations.includes(val)) return alert('Taka lokalizacja już istnieje.');
         appData.locations.push(val);
-        saveAppData();
-        renderLocations();
-        input.value = '';
-        alert('Dodano lokalizację!');
+        saveAppData(); renderLocations(); document.getElementById('newLocationInput').value = '';
     }
 
     function addVehicle() {
-        const input = document.getElementById('newVehicleInput');
-        const val = input.value.trim();
-        if (!val) { alert('Wpisz dane samochodu.'); return; }
-        if (appData.vehicles.includes(val)) { alert('Taki samochód już istnieje.'); return; }
+        const val = document.getElementById('newVehicleInput').value.trim();
+        if (!val) return alert('Wpisz dane samochodu.');
+        if (appData.vehicles.includes(val)) return alert('Taki samochód już istnieje.');
         appData.vehicles.push(val);
-        saveAppData();
-        renderVehicles();
-        input.value = '';
-        alert('Dodano samochód!');
+        saveAppData(); renderVehicles(); document.getElementById('newVehicleInput').value = '';
     }
 
     function addEmployee() {
-        const nameInput = document.getElementById('newEmployeeInput');
-        const name = nameInput.value.trim();
-
-        if (!name) { alert('Wpisz imię i nazwisko pracownika.'); return; }
-        if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { 
-            alert('Taki pracownik już istnieje.'); 
-            return; 
-        }
-
+        const name = document.getElementById('newEmployeeInput').value.trim();
+        if (!name) return alert('Wpisz imię i nazwisko pracownika.');
+        if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
-        saveAppData();
-        renderEmployees();
-        renderManageEmployeesList();
-        populateFilterDropdown();
-        nameInput.value = '';
-        alert(`Dodano pracownika: ${name}`);
+        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown();
+        document.getElementById('newEmployeeInput').value = '';
     }
 
     function calculateAllowance(depStr, retStr) {
         if (!depStr || !retStr) return 0;
-        const start = new Date(depStr);
-        const end = new Date(retStr);
-        const diffMs = end - start;
-        if (diffMs <= 0) return 0;
-
-        const totalHours = diffMs / (1000 * 60 * 60);
+        const totalHours = (new Date(retStr) - new Date(depStr)) / (1000 * 60 * 60);
+        if (totalHours <= 0) return 0;
         const dailyRate = 45.0;
-
         if (totalHours < 24) {
             if (totalHours < 8) return 0;
             if (totalHours <= 12) return dailyRate * 0.5;
             return dailyRate;
         } else {
-            const fullDays = Math.floor(totalHours / 24);
-            const remainderHours = totalHours % 24;
-
-            let allowance = fullDays * dailyRate;
-
-            if (remainderHours > 0) {
-                if (remainderHours <= 8) {
-                    allowance += dailyRate * 0.5;
-                } else {
-                    allowance += dailyRate;
-                }
-            }
+            let allowance = Math.floor(totalHours / 24) * dailyRate;
+            const rem = totalHours % 24;
+            if (rem > 0) allowance += (rem <= 8) ? dailyRate * 0.5 : dailyRate;
             return allowance;
         }
     }
@@ -730,46 +516,29 @@
     function calculateAllowancePreview() {
         const dep = document.getElementById('departureTime').value;
         const ret = document.getElementById('returnTime').value;
-        const allowance = calculateAllowance(dep, ret);
-        document.getElementById('previewAllowanceText').textContent = allowance.toFixed(2) + ' zł';
+        document.getElementById('previewAllowanceText').textContent = calculateAllowance(dep, ret).toFixed(2) + ' zł';
     }
 
     function generateProtocols() {
-        const location = document.getElementById('locationSelect').value;
-        const vehicle = document.getElementById('vehicleSelect').value;
+        const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
+        if (!authorRadio) return alert('Wskaż, kto wypełnia protokół!');
+        
         const departure = document.getElementById('departureTime').value;
         const returnT = document.getElementById('returnTime').value;
-        const purpose = document.getElementById('delegationPurpose').value.trim();
-        const workDesc = document.getElementById('workDescription').value.trim();
-
-        const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
-        if (!authorRadio) {
-            alert('Wskaż, kto wypełnia protokół!');
-            return;
-        }
+        if (!departure || !returnT) return alert('Uzupełnij daty wyjazdu i powrotu.');
 
         const authorName = authorRadio.value;
-        const targetEmail = DEFAULT_MANAGER_EMAIL;
-
-        const coCheckboxes = document.querySelectorAll('input[name="coParticipantCheckbox"]:checked');
-        const coParticipants = Array.from(coCheckboxes).map(cb => cb.value);
-        const coParticipantsStr = coParticipants.length > 0 ? coParticipants.join(', ') : 'brak (wyjazd pojedynczy)';
-
-        if (!departure || !returnT) {
-            alert('Proszę uzupełnić datę i godzinę wyjazdu oraz powrotu.');
-            return;
-        }
-
+        const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
+        const location = document.getElementById('locationSelect').value;
+        const vehicle = document.getElementById('vehicleSelect').value;
+        const purpose = document.getElementById('delegationPurpose').value.trim();
+        const workDesc = document.getElementById('workDescription').value.trim();
         const allowanceAmount = calculateAllowance(departure, returnT);
-
+        
         const fileInput = document.querySelector(`input[type="file"][data-emp="${authorName}"]`);
-        let fileName = 'Brak załącznika';
-        if (fileInput && fileInput.files.length > 0) {
-            fileName = fileInput.files[0].name;
-        }
+        const fileName = (fileInput && fileInput.files.length > 0) ? fileInput.files[0].name : 'Brak załącznika';
 
         const emailSubject = `${location} - ${authorName}`;
-        
         const emailBody = `Szanowny Panie Kierowniku,
 
 Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły delegacji:
@@ -778,7 +547,7 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczeni
   ${authorName}
 
 • Współuczestnicy:
-  ${coParticipantsStr}
+  ${coParts}
 
 • Lokalizacja docelowa:
   ${location}
@@ -807,82 +576,61 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczeni
 Z poważaniem,
 ${authorName}`;
 
-        const delegationRecord = {
-            id: Date.now(),
-            dateCreated: new Date().toLocaleString(),
-            location: location,
-            vehicle: vehicle,
-            departure: departure.replace('T', ' '),
-            return: returnT.replace('T', ' '),
-            purpose: purpose || 'Brak',
-            author: authorName,
-            coParticipants: coParticipantsStr,
-            allowance: allowanceAmount.toFixed(2) + ' zł',
-            attachment: fileName
-        };
-
-        appData.history.unshift(delegationRecord);
+        appData.history.unshift({
+            id: Date.now(), dateCreated: new Date().toLocaleString(),
+            location, vehicle, departure: departure.replace('T', ' '), return: returnT.replace('T', ' '),
+            purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
+            allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName
+        });
         saveAppData();
 
         const emailsContainer = document.getElementById('emailsContainer');
-        emailsContainer.innerHTML = '';
-
-        const emailDiv = document.createElement('div');
-        emailDiv.className = 'email-preview';
-        emailDiv.innerHTML = `
-            <div class="email-header">
-                E-mail do: <span style="color:var(--primary-color);">${targetEmail}</span> (Wypełnia: <b>${authorName}</b>)
-                <span class="badge">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
-            </div>
-            <div style="font-size: 13px; margin-bottom: 8px;"><strong>Temat:</strong> ${emailSubject}</div>
-            <div class="email-body">${emailBody}</div>
-            <div class="actions-row">
-                <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
-                <a href="mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
+        emailsContainer.innerHTML = `
+            <div class="email-preview">
+                <div class="email-header">
+                    E-mail do: <span style="color:var(--primary-color);">${DEFAULT_MANAGER_EMAIL}</span>
+                    <span class="badge">Dieta: ${allowanceAmount.toFixed(2)} zł</span>
+                </div>
+                <div style="font-size: 13px; margin-bottom: 8px;"><strong>Temat:</strong> ${emailSubject}</div>
+                <div class="email-body">${emailBody}</div>
+                <div class="actions-row">
+                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
+                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij e-mail ✉</a>
+                </div>
             </div>
         `;
-        emailsContainer.appendChild(emailDiv);
-
-        document.getElementById('form-card').style.display = 'none';
-        document.getElementById('results-card').style.display = 'block';
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        switchTab('results');
     }
 
-    function copyToClipboard(button) {
-        const text = decodeURIComponent(button.getAttribute('data-text'));
-        navigator.clipboard.writeText(text).then(() => {
-            const originalText = button.textContent;
-            button.textContent = 'Skopiowano! ✓';
-            button.style.backgroundColor = '#27ae60';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.style.backgroundColor = '';
-            }, 2000);
-        }).catch(err => {
-            alert('Nie udało się skopiować.');
+    function copyToClipboard(btn) {
+        navigator.clipboard.writeText(decodeURIComponent(btn.getAttribute('data-text'))).then(() => {
+            const org = btn.textContent; btn.textContent = 'Skopiowano! ✓'; btn.style.backgroundColor = '#27ae60';
+            setTimeout(() => { btn.textContent = org; btn.style.backgroundColor = ''; }, 2000);
         });
     }
 
     function switchTab(tab) {
-        const formCard = document.getElementById('form-card');
-        const resultsCard = document.getElementById('results-card');
-        const historyCard = document.getElementById('history-card');
-        const btnForm = document.getElementById('tabFormBtn');
-        const btnHistory = document.getElementById('tabHistoryBtn');
-
-        resultsCard.style.display = 'none';
+        document.getElementById('form-card').style.display = 'none';
+        document.getElementById('results-card').style.display = 'none';
+        document.getElementById('history-card').style.display = 'none';
+        document.getElementById('cloud-card').style.display = 'none';
+        
+        document.getElementById('tabFormBtn').classList.remove('active');
+        document.getElementById('tabHistoryBtn').classList.remove('active');
+        document.getElementById('tabCloudBtn').classList.remove('active');
 
         if (tab === 'form') {
-            formCard.style.display = 'block';
-            historyCard.style.display = 'none';
-            btnForm.classList.add('active');
-            btnHistory.classList.remove('active');
+            document.getElementById('form-card').style.display = 'block';
+            document.getElementById('tabFormBtn').classList.add('active');
         } else if (tab === 'history') {
-            formCard.style.display = 'none';
-            historyCard.style.display = 'block';
-            btnHistory.classList.add('active');
-            btnForm.classList.remove('active');
+            document.getElementById('history-card').style.display = 'block';
+            document.getElementById('tabHistoryBtn').classList.add('active');
             renderHistory();
+        } else if (tab === 'cloud') {
+            document.getElementById('cloud-card').style.display = 'block';
+            document.getElementById('tabCloudBtn').classList.add('active');
+        } else if (tab === 'results') {
+            document.getElementById('results-card').style.display = 'block';
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -890,62 +638,85 @@ ${authorName}`;
     function renderHistory() {
         const container = document.getElementById('historyTableContainer');
         const filterEmp = document.getElementById('filterEmployee').value;
+        let hist = appData.history;
+        if (filterEmp) hist = hist.filter(i => i.author === filterEmp || i.coParticipants.includes(filterEmp));
 
-        let filteredHistory = appData.history;
-        if (filterEmp) {
-            filteredHistory = appData.history.filter(item => 
-                item.author === filterEmp || item.coParticipants.includes(filterEmp)
-            );
-        }
+        if (hist.length === 0) return container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii.</p>';
 
-        if (filteredHistory.length === 0) {
-            container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii delegacji do wyświetlenia.</p>';
-            return;
-        }
-
-        let html = `
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Data utworzenia</th>
-                        <th>Autor / Współuczestnicy</th>
-                        <th>Lokalizacja i Pojazd</th>
-                        <th>Termin / Dieta</th>
-                        <th>Załącznik</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        filteredHistory.forEach(item => {
-            html += `
-                <tr>
-                    <td>${item.dateCreated}</td>
-                    <td><b>Zgłaszający:</b> ${item.author}<br><small style="color:#666;">Z kim: ${item.coParticipants}</small></td>
-                    <td><b>${item.location}</b><br><small style="color:#666;">Pojazd: ${item.vehicle}</small></td>
-                    <td>${item.departure} do ${item.return}<br><b>Dieta: ${item.allowance}</b></td>
-                    <td>${item.attachment}</td>
-                </tr>
-            `;
+        let html = `<table class="history-table"><thead><tr><th>Data</th><th>Osoby</th><th>Lokalizacja/Pojazd</th><th>Termin/Dieta</th></tr></thead><tbody>`;
+        hist.forEach(i => {
+            html += `<tr>
+                <td>${i.dateCreated}</td>
+                <td><b>Zgłasza:</b> ${i.author}<br><small>Z kim: ${i.coParticipants}</small></td>
+                <td><b>${i.location}</b><br><small>${i.vehicle}</small></td>
+                <td>${i.departure} - ${i.return}<br><b>${i.allowance}</b></td>
+            </tr>`;
         });
-
-        html += '</tbody></table>';
-        container.innerHTML = html;
+        container.innerHTML = html + '</tbody></table>';
     }
 
     function clearHistory() {
-        if (confirm('Czy na pewno chcesz wyczyścić całą historię delegacji?')) {
-            appData.history = [];
-            saveAppData();
-            renderHistory();
-        }
+        if (confirm('Czy wyczyścić historię?')) { appData.history = []; saveAppData(); renderHistory(); }
+    }
+    function resetForm() { switchTab('form'); setDefaultDates(); calculateAllowancePreview(); }
+
+    // --- LOGIKA CHMURY (JSONBIN.IO) ---
+    async function uploadToCloud() {
+        saveAppData();
+        const binId = appData.cloudSettings.binId;
+        const apiKey = appData.cloudSettings.apiKey;
+        
+        if (!binId || !apiKey) return alert("Najpierw wklej ID Bazy i Klucz API.");
+
+        const btn = document.getElementById('btnUploadCloud');
+        btn.textContent = "Wysyłanie...";
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+                body: JSON.stringify(appData)
+            });
+            if (res.ok) {
+                appData.cloudSettings.lastSync = new Date().toLocaleString();
+                saveAppData();
+                updateSyncDateUI();
+                alert("Dane zostały wysłane do chmury! Inni mogą je teraz pobrać.");
+            } else {
+                alert("Błąd. Upewnij się, że klucze są poprawne.");
+            }
+        } catch(e) { alert("Błąd połączenia z internetem."); }
+        btn.textContent = "Wyślij bieżące dane do chmury ⬆️";
     }
 
-    function resetForm() {
-        switchTab('form');
-        setDefaultDates();
-        renderEmployees();
-        calculateAllowancePreview();
+    async function downloadFromCloud() {
+        saveAppData();
+        const binId = appData.cloudSettings.binId;
+        const apiKey = appData.cloudSettings.apiKey;
+        
+        if (!binId || !apiKey) return alert("Najpierw wklej ID Bazy i Klucz API.");
+
+        const btn = document.getElementById('btnDownloadCloud');
+        btn.textContent = "Pobieranie...";
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+                headers: { 'X-Master-Key': apiKey }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if(data.record && data.record.employees) {
+                    const savedCloudSettings = appData.cloudSettings; 
+                    appData = data.record;
+                    appData.cloudSettings = savedCloudSettings;
+                    appData.cloudSettings.lastSync = new Date().toLocaleString();
+                    saveAppData();
+                    initApp();
+                    alert("Sukces! Pobrano najnowsze dane z chmury.");
+                }
+            } else {
+                alert("Błąd pobierania. Sprawdź klucze.");
+            }
+        } catch(e) { alert("Błąd połączenia z internetem."); }
+        btn.textContent = "Pobierz dane z chmury ⬇️";
     }
 
     window.onload = initApp;
