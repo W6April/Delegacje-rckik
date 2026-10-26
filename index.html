@@ -337,7 +337,7 @@
         
         <!-- Lokalizacja -->
         <div class="form-group">
-            <label for="locationSelect">Lokalizacja RCKiK:</label>
+            <label for="locationSelect">Lokalizacja RCKiK / WCKiK:</label>
             <select id="locationSelect"></select>
             <div class="inline-add" style="margin-top: 8px;">
                 <input type="text" id="newLocationInput" placeholder="Nowa lokalizacja (np. RCKiK Warszawa)">
@@ -446,25 +446,31 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v8';
+    const STORAGE_KEY = 'rckik_app_data_v9';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
         locations: [
             "RCKiK Łódź", "RCKiK Gdańsk", "RCKiK Kielce", "RCKiK Kalisz", 
-            "RCKiK Rzeszów", "RCKiK Olsztyn", "RCKiK Katowice", "RCKiK Białystok", "RCKiK Szczecin"
+            "RCKiK Rzeszów", "RCKiK Olsztyn", "RCKiK Katowice", "RCKiK Białystok", 
+            "RCKiK Szczecin", "WCKiK Gdańsk", "WCKiK Wrocław"
         ],
         vehicles: [
             "Opel Movano (WU 4395R)", 
             "Renault Master (WU 4724L)",
-            "Skoda Octavia (WU 4086P)"
+            "Skoda Octavia (WU 4086P)",
+            "Skoda Octavia (Ignacy)",
+            "Toyota Proace (Miros)"
         ],
         employees: [
             { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL, hidden: false },
             { name: "Marek Kwiecień", email: DEFAULT_MANAGER_EMAIL, hidden: false },
             { name: "Kacper Górka", email: DEFAULT_MANAGER_EMAIL, hidden: false },
             { name: "Kamil Cieżko", email: DEFAULT_MANAGER_EMAIL, hidden: false },
-            { name: "Janusz Tołkacz", email: DEFAULT_MANAGER_EMAIL, hidden: false }
+            { name: "Janusz Tołkacz", email: DEFAULT_MANAGER_EMAIL, hidden: true },
+            { name: "Grzegorz Miros", email: DEFAULT_MANAGER_EMAIL, hidden: true },
+            { name: "Ignacy Kępiński", email: DEFAULT_MANAGER_EMAIL, hidden: true },
+            { name: "Konrad Zbrzezny", email: DEFAULT_MANAGER_EMAIL, hidden: true }
         ],
         history: []
     };
