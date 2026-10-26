@@ -194,7 +194,7 @@
             background: #fff;
             border: 1px solid var(--border-color);
             border-left: 5px solid var(--primary-color);
-            padding: 15px;
+            padding: 18px;
             margin-bottom: 15px;
             border-radius: 4px;
         }
@@ -202,27 +202,29 @@
         .email-header {
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             border-bottom: 1px dashed var(--border-color);
-            padding-bottom: 5px;
+            padding-bottom: 8px;
             word-break: break-all;
         }
 
         .email-body {
             white-space: pre-wrap;
-            font-family: monospace;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f8f9fa;
-            padding: 10px;
+            padding: 15px;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 14px;
+            line-height: 1.6;
             overflow-x: auto;
+            border: 1px solid #edf0f2;
         }
 
         .actions-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 10px;
+            margin-top: 15px;
             flex-wrap: wrap;
             gap: 10px;
         }
@@ -230,7 +232,7 @@
         .badge {
             background: #e1f5fe;
             color: #0288d1;
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: bold;
@@ -344,7 +346,7 @@
             </div>
         </div>
 
-        <!-- Daty i godziny w responsywnym kontenerze -->
+        <!-- Daty i godziny -->
         <div class="date-inputs-row">
             <div class="form-group">
                 <label for="departureTime">Data i godzina wyjazdu:</label>
@@ -414,7 +416,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v6';
+    const STORAGE_KEY = 'rckik_app_data_v7';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -688,18 +690,37 @@
         
         const emailBody = `Szanowny Panie Kierowniku,
 
-Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły:
+Zgłaszam odbycie podróży służbowej w celu rozliczenia diety oraz wykluczenia czasu pracy. Poniżej przedstawiam szczegóły delegacji:
 
-• Uczestnik delegacji (zgłaszający): ${authorName}
-• Współuczestnicy wyjazdu: ${coParticipantsStr}
-• Lokalizacja docelowa: ${location}
-• Wykorzystany pojazd: ${vehicle}
-• Data i godzina wyjazdu: ${departure.replace('T', ' ')}
-• Data i godzina powrotu: ${returnT.replace('T', ' ')}
-• Cel delegacji: ${purpose || 'Nie podano'}
-• Opis wykonanej pracy: ${workDesc || 'Nie podano'}
-• Wyliczona dieta krajowa: ${allowanceAmount.toFixed(2)} PLN
-• Załącznik (rachunek/faktura): ${fileName}
+• Zgłaszający (wypełniający):
+  ${authorName}
+
+• Współuczestnicy:
+  ${coParticipantsStr}
+
+• Lokalizacja docelowa:
+  ${location}
+
+• Pojazd:
+  ${vehicle}
+
+• Termin wyjazdu:
+  ${departure.replace('T', ' ')}
+
+• Termin powrotu:
+  ${returnT.replace('T', ' ')}
+
+• Cel delegacji:
+  ${purpose || 'Nie podano'}
+
+• Opis wykonanej pracy:
+  ${workDesc || 'Nie podano'}
+
+• Należna dieta krajowa:
+  ${allowanceAmount.toFixed(2)} PLN
+
+• Załącznik (faktura/rachunek):
+  ${fileName}
 
 Z poważaniem,
 ${authorName}`;
@@ -731,7 +752,7 @@ ${authorName}`;
                 E-mail do: <span style="color:var(--primary-color);">${targetEmail}</span> (Wypełnia: <b>${authorName}</b>)
                 <span class="badge">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
             </div>
-            <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
+            <div style="font-size: 13px; margin-bottom: 8px;"><strong>Temat:</strong> ${emailSubject}</div>
             <div class="email-body">${emailBody}</div>
             <div class="actions-row">
                 <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
