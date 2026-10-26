@@ -289,6 +289,27 @@
             color: #888;
         }
 
+        .manage-box {
+            display: none;
+            background: #f1f2f6;
+            border: 1px solid #ced6e0;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .manage-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #e4e7eb;
+            font-size: 13px;
+        }
+        .manage-item:last-child {
+            border-bottom: none;
+        }
+
         @media (min-width: 650px) {
             .participant-row {
                 flex-direction: row;
@@ -343,6 +364,15 @@
             <div class="inline-add" style="margin-top: 10px;">
                 <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
                 <button type="button" onclick="addEmployee()">Dodaj pracownika</button>
+            </div>
+
+            <!-- Panel wygaszania/zarządzania pracownikami -->
+            <div style="margin-top: 8px;">
+                <button type="button" class="secondary" onclick="toggleManageEmployees()" style="font-size: 12px; padding: 6px 12px;">⚙ Zarządzaj widocznością pracowników</button>
+            </div>
+            <div id="manageEmployeesBox" class="manage-box">
+                <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Widoczność na liście głównej:</div>
+                <div id="manageEmployeesList"></div>
             </div>
         </div>
 
@@ -416,7 +446,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v7';
+    const STORAGE_KEY = 'rckik_app_data_v8';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -425,13 +455,16 @@
             "RCKiK Rzeszów", "RCKiK Olsztyn", "RCKiK Katowice", "RCKiK Białystok", "RCKiK Szczecin"
         ],
         vehicles: [
-            "Opel Movano (WU 4395R)", "Renault Master (WU 4724L)"
+            "Opel Movano (WU 4395R)", 
+            "Renault Master (WU 4724L)",
+            "Skoda Octavia (WU 4086P)"
         ],
         employees: [
-            { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL },
-            { name: "Marek Kwiecień", email: DEFAULT_MANAGER_EMAIL },
-            { name: "Kacper Górka", email: DEFAULT_MANAGER_EMAIL },
-            { name: "Kamil Cieżko", email: DEFAULT_MANAGER_EMAIL }
+            { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL, hidden: false },
+            { name: "Marek Kwiecień", email: DEFAULT_MANAGER_EMAIL, hidden: false },
+            { name: "Kacper Górka", email: DEFAULT_MANAGER_EMAIL, hidden: false },
+            { name: "Kamil Cieżko", email: DEFAULT_MANAGER_EMAIL, hidden: false },
+            { name: "Janusz Tołkacz", email: DEFAULT_MANAGER_EMAIL, hidden: false }
         ],
         history: []
     };
@@ -462,7 +495,7 @@
         if (confirm('Czy na pewno chcesz zresetować lokalizacje, samochody i pracowników do stanu domyślnego?')) {
             appData.locations = [...defaultData.locations];
             appData.vehicles = [...defaultData.vehicles];
-            appData.employees = [...defaultData.employees];
+            appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
             saveAppData();
             initApp();
             alert('Zresetowano słowniki pomyślnie!');
@@ -473,6 +506,7 @@
         renderLocations();
         renderVehicles();
         renderEmployees();
+        renderManageEmployeesList();
         setDefaultDates();
         populateFilterDropdown();
         calculateAllowancePreview();
@@ -518,7 +552,14 @@
         if (!container) return;
         container.innerHTML = '';
         
-        appData.employees.forEach((emp, index) => {
+        const visibleEmployees = appData.employees.filter(emp => !emp.hidden);
+
+        if (visibleEmployees.length === 0) {
+            container.innerHTML = '<div style="color:#777; font-size:13px; padding:10px;">Brak widocznych pracowników. Włącz ich w panelu zarządzania poniżej.</div>';
+            return;
+        }
+
+        visibleEmployees.forEach((emp, index) => {
             const row = document.createElement('div');
             row.className = 'participant-row';
             row.innerHTML = `
@@ -541,6 +582,40 @@
             container.appendChild(row);
         });
         updateParticipantRoles();
+    }
+
+    function toggleManageEmployees() {
+        const box = document.getElementById('manageEmployeesBox');
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function renderManageEmployeesList() {
+        const container = document.getElementById('manageEmployeesList');
+        if (!container) return;
+        container.innerHTML = '';
+
+        appData.employees.forEach((emp, index) => {
+            const item = document.createElement('div');
+            item.className = 'manage-item';
+            const isHidden = !!emp.hidden;
+            item.innerHTML = `
+                <span style="${isHidden ? 'color: #888; text-decoration: line-through;' : 'font-weight: 600;'}">
+                    ${emp.name} ${isHidden ? '(wygaszony)' : ''}
+                </span>
+                <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: ${isHidden ? '#27ae60' : '#e67e22'};" onclick="toggleEmployeeVisibility(${index})">
+                    ${isHidden ? 'Przywróć na listę' : 'Wygas'}
+                </button>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function toggleEmployeeVisibility(index) {
+        appData.employees[index].hidden = !appData.employees[index].hidden;
+        saveAppData();
+        renderEmployees();
+        renderManageEmployeesList();
+        populateFilterDropdown();
     }
 
     function updateParticipantRoles() {
@@ -567,7 +642,7 @@
         appData.employees.forEach(emp => {
             const option = document.createElement('option');
             option.value = emp.name;
-            option.textContent = emp.name;
+            option.textContent = emp.name + (emp.hidden ? ' (wygaszony)' : '');
             filterSelect.appendChild(option);
         });
     }
@@ -606,9 +681,10 @@
             return; 
         }
 
-        appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL });
+        appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
         saveAppData();
         renderEmployees();
+        renderManageEmployeesList();
         populateFilterDropdown();
         nameInput.value = '';
         alert(`Dodano pracownika: ${name}`);
