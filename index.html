@@ -73,7 +73,6 @@
         }
 
         input[type="text"],
-        input[type="email"],
         input[type="datetime-local"],
         select,
         textarea {
@@ -139,12 +138,6 @@
             border: 1px solid #e1e1e1;
             border-radius: 4px;
             gap: 10px;
-        }
-
-        .participant-roles {
-            display: flex;
-            align-items: center;
-            gap: 15px;
         }
 
         .file-input-container {
@@ -293,14 +286,13 @@
         <!-- Uczestnicy -->
         <div class="form-group">
             <label>Uczestnicy delegacji:</label>
-            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz **kto wypełnia** protokół. 2. Zaznacz **z kim był** (współuczestnicy). 3. Opcjonalnie dodaj rachunek/fakturę.</p>
+            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b> (współuczestnicy). 3. Opcjonalnie dodaj rachunek/fakturę.</p>
             <div class="participants-container" id="participantsGroup"></div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px;">
+            <div class="inline-add" style="margin-top: 10px;">
                 <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
-                <input type="email" id="newEmployeeEmailInput" placeholder="E-mail pracownika">
+                <button type="button" onclick="addEmployee()">Dodaj pracownika</button>
             </div>
-            <button type="button" onclick="addEmployee()" style="margin-top: 8px;">Dodaj pracownika do bazy</button>
         </div>
 
         <!-- Daty i godziny -->
@@ -323,7 +315,7 @@
         <!-- Cel i Praca -->
         <div class="form-group">
             <label for="delegationPurpose">Cel delegacji:</label>
-            <input type="text" id="delegationPurpose" placeholder="np. Transport preparatów krwią / Spotkanie robocze">
+            <input type="text" id="delegationPurpose" placeholder="np. Transport preparatów krwi / Spotkanie robocze">
         </div>
 
         <div class="form-group">
@@ -331,7 +323,7 @@
             <textarea id="workDescription" placeholder="Szczegółowy opis wykonanych czynności..."></textarea>
         </div>
 
-        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj Protokoły dla Uczestników</button>
+        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj Protokół</button>
         
         <div style="text-align: right; margin-top: 15px;">
             <button type="button" class="secondary" onclick="resetToDefaults()" style="font-size: 11px; padding: 5px 10px; background: #e74c3c;">Resetuj słowniki do domyślnych</button>
@@ -340,8 +332,8 @@
 
     <!-- WYNIKI -->
     <div class="card results-container" id="results-card">
-        <h2>Wygenerowane Protokoły E-mail (Dla Kierownika)</h2>
-        <p style="font-size: 14px; color: #666;">Protokoły zostały przygotowane. Jeśli dołączyłeś plik, system dołączył go bezpośrednio do wiadomości (tam gdzie wspiera to klient poczty) lub wskazał jako załącznik:</p>
+        <h2>Wygenerowany Protokół E-mail (Dla Kierownika)</h2>
+        <p style="font-size: 14px; color: #666;">Protokół został przygotowany i zaadresowany do kierownika:</p>
         
         <div id="emailsContainer"></div>
 
@@ -371,8 +363,8 @@
 </div>
 
 <script>
-    // Zmiana na v4, aby upewnić się, że ładują się świeże dane po wcześniejszym błędzie
-    const STORAGE_KEY = 'rckik_app_data_v4';
+    const STORAGE_KEY = 'rckik_app_data_v5';
+    const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
         locations: [
@@ -383,10 +375,10 @@
             "Opel Movano (WU 4395R)", "Renault Master (WU 4724L)"
         ],
         employees: [
-            { name: "Bartosz Miller", email: "bartosz.miller@m2mteam.pl" },
-            { name: "Marek Kwiecień", email: "bartosz.miller@m2mteam.pl" },
-            { name: "Kacper Górka", email: "bartosz.miller@m2mteam.pl" },
-            { name: "Kamil Cieżko", email: "bartosz.miller@m2mteam.pl" }
+            { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL },
+            { name: "Marek Kwiecień", email: DEFAULT_MANAGER_EMAIL },
+            { name: "Kacper Górka", email: DEFAULT_MANAGER_EMAIL },
+            { name: "Kamil Cieżko", email: DEFAULT_MANAGER_EMAIL }
         ],
         history: []
     };
@@ -479,13 +471,13 @@
             row.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div title="Kto wypełnia ten protokół?" style="font-size:12px; color:#c0392b; font-weight:600;">
-                        Wypełnia: <input type="radio" name="authorRadio" value="${emp.name}" data-email="${emp.email}" ${index === 0 ? 'checked' : ''} style="cursor:pointer;" onchange="updateParticipantRoles()">
+                        Wypełnia: <input type="radio" name="authorRadio" value="${emp.name}" data-email="${DEFAULT_MANAGER_EMAIL}" ${index === 0 ? 'checked' : ''} style="cursor:pointer;" onchange="updateParticipantRoles()">
                     </div>
                     <div title="Współuczestnik wyjazdu">
                         Towarzyszy: <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}" style="cursor:pointer;">
                     </div>
                     <label for="co_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
-                        <b>${emp.name}</b> <span style="font-size:11px; color:#888;">(${emp.email})</span>
+                        <b>${emp.name}</b>
                     </label>
                 </div>
                 <div class="file-input-container">
@@ -498,7 +490,6 @@
         updateParticipantRoles();
     }
 
-    // Blokuje zaznaczenie tej samej osoby jako autora i towarzysza jednocześnie
     function updateParticipantRoles() {
         const authorRadios = document.querySelectorAll('input[name="authorRadio"]');
         let selectedAuthor = "";
@@ -554,23 +545,22 @@
 
     function addEmployee() {
         const nameInput = document.getElementById('newEmployeeInput');
-        const emailInput = document.getElementById('newEmployeeEmailInput');
         const name = nameInput.value.trim();
-        const email = emailInput.value.trim() || 'bartosz.miller@m2mteam.pl';
 
         if (!name) { alert('Wpisz imię i nazwisko pracownika.'); return; }
-        if (appData.employees.some(e => e.name === name)) { alert('Taki pracownik już istnieje.'); return; }
+        if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { 
+            alert('Taki pracownik już istnieje.'); 
+            return; 
+        }
 
-        appData.employees.push({ name: name, email: email });
+        appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL });
         saveAppData();
         renderEmployees();
         populateFilterDropdown();
         nameInput.value = '';
-        emailInput.value = '';
-        alert('Dodano pracownika!');
+        alert(`Dodano pracownika: ${name}`);
     }
 
-    // Kalkulacja diety krajowej (stawka bazowa 45 zł za dobę) wg przepisów
     function calculateAllowance(depStr, retStr) {
         if (!depStr || !retStr) return 0;
         const start = new Date(depStr);
@@ -579,15 +569,13 @@
         if (diffMs <= 0) return 0;
 
         const totalHours = diffMs / (1000 * 60 * 60);
-        const dailyRate = 45.0; // Urzędowa stawka diety krajowej w PLN
+        const dailyRate = 45.0;
 
         if (totalHours < 24) {
-            // DELEGACJA PONIŻEJ 24 GODZIN
             if (totalHours < 8) return 0;
-            if (totalHours <= 12) return dailyRate * 0.5; // 8 - 12h: połowa diety (22.50)
-            return dailyRate; // ponad 12h: pełna dieta (45.00)
+            if (totalHours <= 12) return dailyRate * 0.5;
+            return dailyRate;
         } else {
-            // DELEGACJA POWYŻEJ 24 GODZIN
             const fullDays = Math.floor(totalHours / 24);
             const remainderHours = totalHours % 24;
 
@@ -595,9 +583,9 @@
 
             if (remainderHours > 0) {
                 if (remainderHours <= 8) {
-                    allowance += dailyRate * 0.5; // końcówka do 8 godzin: połowa diety
+                    allowance += dailyRate * 0.5;
                 } else {
-                    allowance += dailyRate; // końcówka ponad 8 godzin: pełna dieta
+                    allowance += dailyRate;
                 }
             }
             return allowance;
@@ -626,7 +614,7 @@
         }
 
         const authorName = authorRadio.value;
-        const authorEmail = authorRadio.getAttribute('data-email');
+        const targetEmail = DEFAULT_MANAGER_EMAIL;
 
         const coCheckboxes = document.querySelectorAll('input[name="coParticipantCheckbox"]:checked');
         const coParticipants = Array.from(coCheckboxes).map(cb => cb.value);
@@ -639,13 +627,10 @@
 
         const allowanceAmount = calculateAllowance(departure, returnT);
 
-        // Sprawdź plik autora
         const fileInput = document.querySelector(`input[type="file"][data-emp="${authorName}"]`);
         let fileName = 'Brak załącznika';
-        let fileObj = null;
         if (fileInput && fileInput.files.length > 0) {
-            fileObj = fileInput.files[0];
-            fileName = fileObj.name;
+            fileName = fileInput.files[0].name;
         }
 
         const emailSubject = `${location} - ${authorName}`;
@@ -692,14 +677,14 @@ ${authorName}`;
         emailDiv.className = 'email-preview';
         emailDiv.innerHTML = `
             <div class="email-header">
-                E-mail do: <span style="color:var(--primary-color);">${authorEmail}</span> (Wypełnia: <b>${authorName}</b>)
+                E-mail do: <span style="color:var(--primary-color);">${targetEmail}</span> (Wypełnia: <b>${authorName}</b>)
                 <span class="badge" style="float: right;">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
             </div>
             <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
             <div class="email-body">${emailBody}</div>
             <div class="actions-row">
                 <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
-                <a href="mailto:${authorEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
+                <a href="mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
             </div>
         `;
         emailsContainer.appendChild(emailDiv);
