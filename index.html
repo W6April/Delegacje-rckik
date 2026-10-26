@@ -28,78 +28,43 @@
             padding: 12px;
         }
 
-        .container {
-            max-width: 950px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
+        .container { max-width: 950px; margin: 0 auto; width: 100%; }
         header { text-align: center; margin-bottom: 20px; }
         header h1 { color: var(--primary-color); margin-bottom: 5px; font-size: 1.6rem; }
         header p { color: #666; margin-top: 0; font-size: 0.9rem; }
 
-        .card {
-            background: var(--card-bg);
-            padding: 18px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--bg-color);
-            padding-bottom: 8px;
-            margin-top: 0;
-        }
+        .card { background: var(--card-bg); padding: 18px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { font-size: 1.2rem; color: var(--primary-color); border-bottom: 2px solid var(--bg-color); padding-bottom: 8px; margin-top: 0; }
 
         .form-group { margin-bottom: 15px; width: 100%; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
-        input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
-            width: 100%; padding: 10px; border: 1px solid var(--border-color);
-            border-radius: 4px; font-size: 14px; max-width: 100%;
+        input[type="text"], input[type="datetime-local"], select, textarea {
+            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; max-width: 100%;
         }
         textarea { resize: vertical; height: 90px; }
-
         .date-inputs-row { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; }
         .date-inputs-row .form-group { flex: 1 1 250px; }
-
         .inline-add { display: flex; gap: 8px; margin-top: 5px; }
 
         button {
             background-color: var(--primary-color); color: white; border: none;
-            padding: 10px 15px; border-radius: 4px; cursor: pointer;
-            font-weight: 600; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;
+            padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 14px; transition: background-color 0.2s; white-space: nowrap;
         }
         button:hover { background-color: var(--primary-hover); }
         button.secondary { background-color: #7f8c8d; }
         button.secondary:hover { background-color: #616a6b; }
-        button.cloud-btn { background-color: #2980b9; width: 100%; padding: 14px; margin-bottom: 10px; font-size: 15px;}
+        button.cloud-btn { background-color: #2980b9; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; border-radius: 8px;}
         button.cloud-btn:hover { background-color: #2471a3; }
 
-        .participants-container {
-            display: flex; flex-direction: column; gap: 10px;
-            background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px;
-        }
-
-        .participant-row {
-            display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
-            background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px;
-        }
+        .participants-container { display: flex; flex-direction: column; gap: 10px; background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; }
+        .participant-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px; }
 
         .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
         .results-container, .history-container, .cloud-container { display: none; }
 
-        .email-preview {
-            background: #fff; border: 1px solid var(--border-color);
-            border-left: 5px solid var(--primary-color); padding: 18px; margin-bottom: 15px; border-radius: 4px;
-        }
+        .email-preview { background: #fff; border: 1px solid var(--border-color); border-left: 5px solid var(--primary-color); padding: 18px; margin-bottom: 15px; border-radius: 4px; }
         .email-header { font-weight: bold; color: #2c3e50; margin-bottom: 12px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
-        .email-body {
-            white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f8f9fa; padding: 15px; border-radius: 4px; font-size: 14px; line-height: 1.6; border: 1px solid #edf0f2;
-        }
+        .email-body { white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; padding: 15px; border-radius: 4px; font-size: 14px; line-height: 1.6; border: 1px solid #edf0f2; }
         .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px; }
         .badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
@@ -117,7 +82,7 @@
         .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
         .manage-item:last-child { border-bottom: none; }
         
-        .sync-info { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 12px; border-radius: 4px; font-size: 14px; color: #0e6655; margin-bottom: 15px; text-align: center;}
+        .sync-info { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 15px; border-radius: 8px; font-size: 14px; color: #0e6655; margin-bottom: 20px; text-align: center;}
     </style>
 </head>
 <body>
@@ -158,7 +123,7 @@
 
         <div class="form-group">
             <label>Uczestnicy delegacji:</label>
-            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b> (współuczestnicy).</p>
+            <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b>.</p>
             <div class="participants-container" id="participantsGroup"></div>
             
             <div class="inline-add" style="margin-top: 10px;">
@@ -234,31 +199,15 @@
 
     <!-- CHMURA -->
     <div class="card cloud-container" id="cloud-card">
-        <h2>☁️ Synchronizacja z chmurą</h2>
-        <p style="font-size: 13px; color: #555;">Dzięki chmurze wszyscy pracownicy mogą współdzielić bazę samochodów, lokalizacji oraz historię wyjazdów. Aplikacja wykorzystuje darmowe API JSONBin.io.</p>
+        <h2>☁️ Baza Współdzielona</h2>
+        <p style="font-size: 13.5px; color: #555; margin-bottom: 20px;">Dzięki bazie współdzielonej wszyscy pracownicy mają zawsze aktualną listę samochodów, lokalizacji i uczestników. Pamiętaj, aby pobrać dane po otwarciu aplikacji, a wysłać, jeśli dodasz nowy element.</p>
         
         <div class="sync-info" id="syncStatusUI">
-            Ostatnia synchronizacja: <b>Brak danych</b>
+            Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
 
-        <div class="form-group">
-            <label>ID Bazy (Bin ID):</label>
-            <input type="text" id="cloudBinId" placeholder="Wklej Bin ID (np. 6561a3...)">
-        </div>
-        <div class="form-group">
-            <label>Klucz API (Master Key):</label>
-            <input type="password" id="cloudApiKey" placeholder="Wklej X-Master-Key">
-        </div>
-
-        <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">Wyślij bieżące dane do chmury ⬆️</button>
-        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">Pobierz dane z chmury ⬇️</button>
-
-        <div style="margin-top: 20px; font-size: 12px; color: #777; background: #f9f9f9; padding: 10px; border-radius: 4px;">
-            <b>Jak to działa?</b><br>
-            1. Zaloguj się na jsonbin.io i utwórz nowy Bin z pustymi klamrami {}.<br>
-            2. Skopiuj wygenerowany <b>Bin ID</b> oraz <b>Master Key</b> (z zakładki API Keys).<br>
-            3. Wklej je powyżej. Od tego momentu po dodaniu samochodu kliknij "Wyślij", a reszta zespołu kliknie "Pobierz", by go zobaczyć.
-        </div>
+        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">⬇️ POBIERZ AKTUALNĄ BAZĘ</button>
+        <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
     </div>
 
     <!-- STOPKA -->
@@ -268,7 +217,14 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v10';
+    // ==========================================
+    // TUTAJ WKLEJ SWOJE KLUCZE Z JSONBIN.IO:
+    // ==========================================
+    const CLOUD_BIN_ID = 'TUTAJ_WKLEJ_SWOJ_BIN_ID'; 
+    const CLOUD_API_KEY = 'TUTAJ_WKLEJ_SWOJ_KLUCZ_API';
+    // ==========================================
+
+    const STORAGE_KEY = 'rckik_app_data_v11';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -278,11 +234,8 @@
             "RCKiK Szczecin", "WCKiK Gdańsk", "WCKiK Wrocław"
         ],
         vehicles: [
-            "Opel Movano (WU 4395R)", 
-            "Renault Master (WU 4724L)",
-            "Skoda Octavia (WU 4086P)",
-            "Skoda Octavia (Ignacy)",
-            "Toyota Proace (Miros)"
+            "Opel Movano (WU 4395R)", "Renault Master (WU 4724L)",
+            "Skoda Octavia (WU 4086P)", "Skoda Octavia (Ignacy)", "Toyota Proace (Miros)"
         ],
         employees: [
             { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL, hidden: false },
@@ -295,7 +248,7 @@
             { name: "Konrad Zbrzezny", email: DEFAULT_MANAGER_EMAIL, hidden: true }
         ],
         history: [],
-        cloudSettings: { binId: '', apiKey: '', lastSync: 'Nigdy' }
+        lastSync: 'Nigdy'
     };
 
     let appData;
@@ -309,99 +262,66 @@
                     vehicles: Array.isArray(saved.vehicles) && saved.vehicles.length > 0 ? saved.vehicles : [...defaultData.vehicles],
                     employees: Array.isArray(saved.employees) && saved.employees.length > 0 ? saved.employees : [...defaultData.employees],
                     history: Array.isArray(saved.history) ? saved.history : [],
-                    cloudSettings: saved.cloudSettings || { binId: '', apiKey: '', lastSync: 'Nigdy' }
+                    lastSync: saved.lastSync || 'Nigdy'
                 };
             } else {
                 appData = JSON.parse(JSON.stringify(defaultData));
             }
-        } catch (e) {
-            appData = JSON.parse(JSON.stringify(defaultData));
-        }
+        } catch (e) { appData = JSON.parse(JSON.stringify(defaultData)); }
     }
     loadData();
 
-    function saveAppData() {
-        appData.cloudSettings.binId = document.getElementById('cloudBinId').value.trim();
-        appData.cloudSettings.apiKey = document.getElementById('cloudApiKey').value.trim();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-    }
+    function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
 
     function initApp() {
-        renderLocations();
-        renderVehicles();
-        renderEmployees();
-        renderManageEmployeesList();
-        setDefaultDates();
-        populateFilterDropdown();
-        calculateAllowancePreview();
-        
-        document.getElementById('cloudBinId').value = appData.cloudSettings.binId || '';
-        document.getElementById('cloudApiKey').value = appData.cloudSettings.apiKey || '';
+        renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
+        setDefaultDates(); populateFilterDropdown(); calculateAllowancePreview();
         updateSyncDateUI();
     }
 
     function updateSyncDateUI() {
-        document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja: <b>${appData.cloudSettings.lastSync}</b>`;
+        document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px;">${appData.lastSync}</b>`;
     }
 
     function setDefaultDates() {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
+        const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
         const todayStr = `${year}-${month}-${day}`;
         document.getElementById('departureTime').value = `${todayStr}T06:00`;
         document.getElementById('returnTime').value = `${todayStr}T14:00`;
     }
 
     function renderLocations() {
-        const select = document.getElementById('locationSelect');
-        if (!select) return;
+        const select = document.getElementById('locationSelect'); if (!select) return;
         select.innerHTML = '';
-        appData.locations.forEach(loc => {
-            const option = document.createElement('option');
-            option.value = loc;
-            option.textContent = loc;
-            select.appendChild(option);
-        });
+        appData.locations.forEach(loc => { const opt = document.createElement('option'); opt.value = loc; opt.textContent = loc; select.appendChild(opt); });
     }
 
     function renderVehicles() {
-        const select = document.getElementById('vehicleSelect');
-        if (!select) return;
+        const select = document.getElementById('vehicleSelect'); if (!select) return;
         select.innerHTML = '';
-        appData.vehicles.forEach(veh => {
-            const option = document.createElement('option');
-            option.value = veh;
-            option.textContent = veh;
-            select.appendChild(option);
-        });
+        appData.vehicles.forEach(veh => { const opt = document.createElement('option'); opt.value = veh; opt.textContent = veh; select.appendChild(opt); });
     }
 
     function renderEmployees() {
-        const container = document.getElementById('participantsGroup');
-        if (!container) return;
+        const container = document.getElementById('participantsGroup'); if (!container) return;
         container.innerHTML = '';
-        
         const visibleEmployees = appData.employees.filter(emp => !emp.hidden);
         if (visibleEmployees.length === 0) {
-            container.innerHTML = '<div style="color:#777; font-size:13px; padding:10px;">Brak widocznych pracowników. Włącz ich w panelu zarządzania poniżej.</div>';
+            container.innerHTML = '<div style="color:#777; font-size:13px; padding:10px;">Brak widocznych pracowników. Włącz ich w panelu zarządzania.</div>';
             return;
         }
 
         visibleEmployees.forEach((emp, index) => {
-            const row = document.createElement('div');
-            row.className = 'participant-row';
+            const row = document.createElement('div'); row.className = 'participant-row';
             row.innerHTML = `
-                <div style="flex: 1; min-width: 150px;">
-                    <b style="font-size: 14px;">${emp.name}</b>
-                </div>
+                <div style="flex: 1; min-width: 150px;"><b style="font-size: 14px;">${emp.name}</b></div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <label style="font-size:12px; color:#c0392b; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                        <input type="radio" name="authorRadio" value="${emp.name}" data-email="${DEFAULT_MANAGER_EMAIL}" ${index === 0 ? 'checked' : ''} onchange="updateParticipantRoles()"> Wypełnia
+                        <input type="radio" name="authorRadio" value="${emp.name}" ${index === 0 ? 'checked' : ''} onchange="updateParticipantRoles()"> Wypełnia
                     </label>
                     <label style="font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                        <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}"> Towarzyszy
+                        <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}"> Towarzyszy
                     </label>
                 </div>
                 <div class="file-input-container" style="flex: 1; min-width: 150px; justify-content: flex-end;">
@@ -414,22 +334,17 @@
     }
 
     function toggleManageEmployees() {
-        const box = document.getElementById('manageEmployeesBox');
-        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+        const box = document.getElementById('manageEmployeesBox'); box.style.display = box.style.display === 'block' ? 'none' : 'block';
     }
 
     function renderManageEmployeesList() {
-        const container = document.getElementById('manageEmployeesList');
-        if (!container) return;
+        const container = document.getElementById('manageEmployeesList'); if (!container) return;
         container.innerHTML = '';
         appData.employees.forEach((emp, index) => {
-            const item = document.createElement('div');
-            item.className = 'manage-item';
+            const item = document.createElement('div'); item.className = 'manage-item';
             const isHidden = !!emp.hidden;
             item.innerHTML = `
-                <span style="${isHidden ? 'color: #888; text-decoration: line-through;' : 'font-weight: 600;'}">
-                    ${emp.name} ${isHidden ? '(wygaszony)' : ''}
-                </span>
+                <span style="${isHidden ? 'color: #888; text-decoration: line-through;' : 'font-weight: 600;'}">${emp.name} ${isHidden ? '(wygaszony)' : ''}</span>
                 <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: ${isHidden ? '#27ae60' : '#e67e22'};" onclick="toggleEmployeeVisibility(${index})">
                     ${isHidden ? 'Przywróć na listę' : 'Wygas'}
                 </button>
@@ -440,34 +355,22 @@
 
     function toggleEmployeeVisibility(index) {
         appData.employees[index].hidden = !appData.employees[index].hidden;
-        saveAppData();
-        renderEmployees();
-        renderManageEmployeesList();
-        populateFilterDropdown();
+        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown();
     }
 
     function updateParticipantRoles() {
-        const authorRadios = document.querySelectorAll('input[name="authorRadio"]');
-        let selectedAuthor = "";
-        authorRadios.forEach(r => { if (r.checked) selectedAuthor = r.value; });
+        const selectedAuthor = Array.from(document.querySelectorAll('input[name="authorRadio"]')).find(r => r.checked)?.value;
         document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-            if (cb.value === selectedAuthor) {
-                cb.checked = false; cb.disabled = true; cb.parentElement.style.opacity = '0.4';
-            } else {
-                cb.disabled = false; cb.parentElement.style.opacity = '1';
-            }
+            if (cb.value === selectedAuthor) { cb.checked = false; cb.disabled = true; cb.parentElement.style.opacity = '0.4'; } 
+            else { cb.disabled = false; cb.parentElement.style.opacity = '1'; }
         });
     }
 
     function populateFilterDropdown() {
-        const filterSelect = document.getElementById('filterEmployee');
-        if (!filterSelect) return;
-        filterSelect.innerHTML = '<option value="">Wszyscy pracownicy</option>';
+        const sel = document.getElementById('filterEmployee'); if (!sel) return;
+        sel.innerHTML = '<option value="">Wszyscy pracownicy</option>';
         appData.employees.forEach(emp => {
-            const option = document.createElement('option');
-            option.value = emp.name;
-            option.textContent = emp.name + (emp.hidden ? ' (wygaszony)' : '');
-            filterSelect.appendChild(option);
+            const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name + (emp.hidden ? ' (wygaszony)' : ''); sel.appendChild(opt);
         });
     }
 
@@ -475,16 +378,14 @@
         const val = document.getElementById('newLocationInput').value.trim();
         if (!val) return alert('Wpisz nazwę lokalizacji.');
         if (appData.locations.includes(val)) return alert('Taka lokalizacja już istnieje.');
-        appData.locations.push(val);
-        saveAppData(); renderLocations(); document.getElementById('newLocationInput').value = '';
+        appData.locations.push(val); saveAppData(); renderLocations(); document.getElementById('newLocationInput').value = '';
     }
 
     function addVehicle() {
         const val = document.getElementById('newVehicleInput').value.trim();
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.includes(val)) return alert('Taki samochód już istnieje.');
-        appData.vehicles.push(val);
-        saveAppData(); renderVehicles(); document.getElementById('newVehicleInput').value = '';
+        appData.vehicles.push(val); saveAppData(); renderVehicles(); document.getElementById('newVehicleInput').value = '';
     }
 
     function addEmployee() {
@@ -492,8 +393,7 @@
         if (!name) return alert('Wpisz imię i nazwisko pracownika.');
         if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
-        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown();
-        document.getElementById('newEmployeeInput').value = '';
+        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
     }
 
     function calculateAllowance(depStr, retStr) {
@@ -514,15 +414,13 @@
     }
 
     function calculateAllowancePreview() {
-        const dep = document.getElementById('departureTime').value;
-        const ret = document.getElementById('returnTime').value;
+        const dep = document.getElementById('departureTime').value; const ret = document.getElementById('returnTime').value;
         document.getElementById('previewAllowanceText').textContent = calculateAllowance(dep, ret).toFixed(2) + ' zł';
     }
 
     function generateProtocols() {
         const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
         if (!authorRadio) return alert('Wskaż, kto wypełnia protokół!');
-        
         const departure = document.getElementById('departureTime').value;
         const returnT = document.getElementById('returnTime').value;
         if (!departure || !returnT) return alert('Uzupełnij daty wyjazdu i powrotu.');
@@ -577,9 +475,8 @@ Z poważaniem,
 ${authorName}`;
 
         appData.history.unshift({
-            id: Date.now(), dateCreated: new Date().toLocaleString(),
-            location, vehicle, departure: departure.replace('T', ' '), return: returnT.replace('T', ' '),
-            purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
+            id: Date.now(), dateCreated: new Date().toLocaleString(), location, vehicle, departure: departure.replace('T', ' '),
+            return: returnT.replace('T', ' '), purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
             allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName
         });
         saveAppData();
@@ -610,113 +507,87 @@ ${authorName}`;
     }
 
     function switchTab(tab) {
-        document.getElementById('form-card').style.display = 'none';
-        document.getElementById('results-card').style.display = 'none';
-        document.getElementById('history-card').style.display = 'none';
-        document.getElementById('cloud-card').style.display = 'none';
+        document.getElementById('form-card').style.display = 'none'; document.getElementById('results-card').style.display = 'none';
+        document.getElementById('history-card').style.display = 'none'; document.getElementById('cloud-card').style.display = 'none';
         
-        document.getElementById('tabFormBtn').classList.remove('active');
-        document.getElementById('tabHistoryBtn').classList.remove('active');
+        document.getElementById('tabFormBtn').classList.remove('active'); document.getElementById('tabHistoryBtn').classList.remove('active');
         document.getElementById('tabCloudBtn').classList.remove('active');
 
-        if (tab === 'form') {
-            document.getElementById('form-card').style.display = 'block';
-            document.getElementById('tabFormBtn').classList.add('active');
-        } else if (tab === 'history') {
-            document.getElementById('history-card').style.display = 'block';
-            document.getElementById('tabHistoryBtn').classList.add('active');
-            renderHistory();
-        } else if (tab === 'cloud') {
-            document.getElementById('cloud-card').style.display = 'block';
-            document.getElementById('tabCloudBtn').classList.add('active');
-        } else if (tab === 'results') {
-            document.getElementById('results-card').style.display = 'block';
-        }
+        if (tab === 'form') { document.getElementById('form-card').style.display = 'block'; document.getElementById('tabFormBtn').classList.add('active'); } 
+        else if (tab === 'history') { document.getElementById('history-card').style.display = 'block'; document.getElementById('tabHistoryBtn').classList.add('active'); renderHistory(); } 
+        else if (tab === 'cloud') { document.getElementById('cloud-card').style.display = 'block'; document.getElementById('tabCloudBtn').classList.add('active'); } 
+        else if (tab === 'results') { document.getElementById('results-card').style.display = 'block'; }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderHistory() {
-        const container = document.getElementById('historyTableContainer');
-        const filterEmp = document.getElementById('filterEmployee').value;
+        const container = document.getElementById('historyTableContainer'); const filterEmp = document.getElementById('filterEmployee').value;
         let hist = appData.history;
         if (filterEmp) hist = hist.filter(i => i.author === filterEmp || i.coParticipants.includes(filterEmp));
-
         if (hist.length === 0) return container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii.</p>';
 
         let html = `<table class="history-table"><thead><tr><th>Data</th><th>Osoby</th><th>Lokalizacja/Pojazd</th><th>Termin/Dieta</th></tr></thead><tbody>`;
         hist.forEach(i => {
-            html += `<tr>
-                <td>${i.dateCreated}</td>
-                <td><b>Zgłasza:</b> ${i.author}<br><small>Z kim: ${i.coParticipants}</small></td>
-                <td><b>${i.location}</b><br><small>${i.vehicle}</small></td>
-                <td>${i.departure} - ${i.return}<br><b>${i.allowance}</b></td>
-            </tr>`;
+            html += `<tr><td>${i.dateCreated}</td><td><b>Zgłasza:</b> ${i.author}<br><small>Z kim: ${i.coParticipants}</small></td>
+                <td><b>${i.location}</b><br><small>${i.vehicle}</small></td><td>${i.departure} - ${i.return}<br><b>${i.allowance}</b></td></tr>`;
         });
         container.innerHTML = html + '</tbody></table>';
     }
 
-    function clearHistory() {
-        if (confirm('Czy wyczyścić historię?')) { appData.history = []; saveAppData(); renderHistory(); }
-    }
+    function clearHistory() { if (confirm('Czy wyczyścić historię?')) { appData.history = []; saveAppData(); renderHistory(); } }
     function resetForm() { switchTab('form'); setDefaultDates(); calculateAllowancePreview(); }
+    function resetToDefaults() {
+        if (confirm('Czy na pewno chcesz zresetować słowniki?')) {
+            appData.locations = [...defaultData.locations]; appData.vehicles = [...defaultData.vehicles]; appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
+            saveAppData(); initApp(); alert('Zresetowano słowniki pomyślnie!');
+        }
+    }
 
-    // --- LOGIKA CHMURY (JSONBIN.IO) ---
+    // --- LOGIKA CHMURY Z KLUCZAMI NA SZTYWNO ---
     async function uploadToCloud() {
-        saveAppData();
-        const binId = appData.cloudSettings.binId;
-        const apiKey = appData.cloudSettings.apiKey;
+        if (CLOUD_BIN_ID.includes('TUTAJ_WKLEJ') || CLOUD_API_KEY.includes('TUTAJ_WKLEJ')) {
+            return alert("Błąd: Brak kluczy w kodzie aplikacji. Zastąp linijki z 'TUTAJ_WKLEJ' odpowiednimi danymi z JSONBin.");
+        }
         
-        if (!binId || !apiKey) return alert("Najpierw wklej ID Bazy i Klucz API.");
-
         const btn = document.getElementById('btnUploadCloud');
         btn.textContent = "Wysyłanie...";
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': apiKey },
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': CLOUD_API_KEY },
                 body: JSON.stringify(appData)
             });
             if (res.ok) {
-                appData.cloudSettings.lastSync = new Date().toLocaleString();
-                saveAppData();
-                updateSyncDateUI();
-                alert("Dane zostały wysłane do chmury! Inni mogą je teraz pobrać.");
-            } else {
-                alert("Błąd. Upewnij się, że klucze są poprawne.");
-            }
+                appData.lastSync = new Date().toLocaleString();
+                saveAppData(); updateSyncDateUI();
+                alert("Super! Zmiany zostały wysłane do bazy. Inni użytkownicy mogą je teraz pobrać.");
+            } else { alert("Błąd zapisu do chmury."); }
         } catch(e) { alert("Błąd połączenia z internetem."); }
-        btn.textContent = "Wyślij bieżące dane do chmury ⬆️";
+        btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
 
     async function downloadFromCloud() {
-        saveAppData();
-        const binId = appData.cloudSettings.binId;
-        const apiKey = appData.cloudSettings.apiKey;
-        
-        if (!binId || !apiKey) return alert("Najpierw wklej ID Bazy i Klucz API.");
+        if (CLOUD_BIN_ID.includes('TUTAJ_WKLEJ') || CLOUD_API_KEY.includes('TUTAJ_WKLEJ')) {
+            return alert("Błąd: Brak kluczy w kodzie aplikacji. Zastąp linijki z 'TUTAJ_WKLEJ' odpowiednimi danymi z JSONBin.");
+        }
 
         const btn = document.getElementById('btnDownloadCloud');
         btn.textContent = "Pobieranie...";
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-                headers: { 'X-Master-Key': apiKey }
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
             });
             if (res.ok) {
                 const data = await res.json();
                 if(data.record && data.record.employees) {
-                    const savedCloudSettings = appData.cloudSettings; 
                     appData = data.record;
-                    appData.cloudSettings = savedCloudSettings;
-                    appData.cloudSettings.lastSync = new Date().toLocaleString();
-                    saveAppData();
-                    initApp();
-                    alert("Sukces! Pobrano najnowsze dane z chmury.");
+                    appData.lastSync = new Date().toLocaleString();
+                    saveAppData(); initApp();
+                    alert("Sukces! Baza została zaktualizowana do najnowszej wersji z chmury.");
                 }
-            } else {
-                alert("Błąd pobierania. Sprawdź klucze.");
-            }
+            } else { alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); }
         } catch(e) { alert("Błąd połączenia z internetem."); }
-        btn.textContent = "Pobierz dane z chmury ⬇️";
+        btn.textContent = "⬇️ POBIERZ AKTUALNĄ BAZĘ";
     }
 
     window.onload = initApp;
