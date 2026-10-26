@@ -218,13 +218,13 @@
 
 <script>
     // ==========================================
-    // TUTAJ WKLEJ SWOJE KLUCZE Z JSONBIN.IO:
+    // KLUCZE DO CHMURY:
     // ==========================================
-    const CLOUD_BIN_ID = 'TUTAJ_WKLEJ_SWOJ_BIN_ID'; 
-    const CLOUD_API_KEY = 'TUTAJ_WKLEJ_SWOJ_KLUCZ_API';
+    const CLOUD_BIN_ID = '6adf7776ffd5d160538d4d55'; 
+    const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v11';
+    const STORAGE_KEY = 'rckik_app_data_v12';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -545,10 +545,6 @@ ${authorName}`;
 
     // --- LOGIKA CHMURY Z KLUCZAMI NA SZTYWNO ---
     async function uploadToCloud() {
-        if (CLOUD_BIN_ID.includes('TUTAJ_WKLEJ') || CLOUD_API_KEY.includes('TUTAJ_WKLEJ')) {
-            return alert("Błąd: Brak kluczy w kodzie aplikacji. Zastąp linijki z 'TUTAJ_WKLEJ' odpowiednimi danymi z JSONBin.");
-        }
-        
         const btn = document.getElementById('btnUploadCloud');
         btn.textContent = "Wysyłanie...";
         try {
@@ -567,10 +563,6 @@ ${authorName}`;
     }
 
     async function downloadFromCloud() {
-        if (CLOUD_BIN_ID.includes('TUTAJ_WKLEJ') || CLOUD_API_KEY.includes('TUTAJ_WKLEJ')) {
-            return alert("Błąd: Brak kluczy w kodzie aplikacji. Zastąp linijki z 'TUTAJ_WKLEJ' odpowiednimi danymi z JSONBin.");
-        }
-
         const btn = document.getElementById('btnDownloadCloud');
         btn.textContent = "Pobieranie...";
         try {
