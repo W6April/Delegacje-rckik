@@ -18,44 +18,51 @@
             --border-color: #dcdde1;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 12px;
         }
 
         .container {
             max-width: 950px;
             margin: 0 auto;
+            width: 100%;
         }
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         header h1 {
             color: var(--primary-color);
             margin-bottom: 5px;
+            font-size: 1.6rem;
         }
 
         header p {
             color: #666;
             margin-top: 0;
+            font-size: 0.9rem;
         }
 
         .card {
             background: var(--card-bg);
-            padding: 25px;
+            padding: 18px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
 
         h2 {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: var(--primary-color);
             border-bottom: 2px solid var(--bg-color);
             padding-bottom: 8px;
@@ -64,12 +71,14 @@
 
         .form-group {
             margin-bottom: 15px;
+            width: 100%;
         }
 
         label {
             display: block;
             font-weight: 600;
             margin-bottom: 5px;
+            font-size: 14px;
         }
 
         input[type="text"],
@@ -80,8 +89,8 @@
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            box-sizing: border-box;
             font-size: 14px;
+            max-width: 100%;
         }
 
         textarea {
@@ -89,9 +98,20 @@
             height: 90px;
         }
 
+        .date-inputs-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .date-inputs-row .form-group {
+            flex: 1 1 250px;
+        }
+
         .inline-add {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-top: 5px;
         }
 
@@ -105,6 +125,7 @@
             font-weight: 600;
             font-size: 14px;
             transition: background-color 0.2s;
+            white-space: nowrap;
         }
 
         button:hover {
@@ -123,21 +144,26 @@
             flex-direction: column;
             gap: 10px;
             background: #fafafa;
-            padding: 15px;
+            padding: 12px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
 
         .participant-row {
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
             background: #fff;
             padding: 10px;
             border: 1px solid #e1e1e1;
             border-radius: 4px;
+            gap: 8px;
+        }
+
+        .participant-actions {
+            display: flex;
+            align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .file-input-container {
@@ -145,10 +171,12 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            flex-wrap: wrap;
         }
 
         .file-input-container input[type="file"] {
             font-size: 12px;
+            max-width: 100%;
         }
 
         .btn-submit {
@@ -177,6 +205,7 @@
             margin-bottom: 10px;
             border-bottom: 1px dashed var(--border-color);
             padding-bottom: 5px;
+            word-break: break-all;
         }
 
         .email-body {
@@ -186,6 +215,7 @@
             padding: 10px;
             border-radius: 4px;
             font-size: 13px;
+            overflow-x: auto;
         }
 
         .actions-row {
@@ -193,6 +223,8 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .badge {
@@ -202,6 +234,13 @@
             border-radius: 12px;
             font-size: 12px;
             font-weight: bold;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
         }
 
         .history-table {
@@ -209,6 +248,7 @@
             border-collapse: collapse;
             font-size: 13px;
             margin-top: 10px;
+            min-width: 500px;
         }
 
         .history-table th, .history-table td {
@@ -223,14 +263,16 @@
 
         .nav-tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
         .nav-tabs button {
             flex: 1;
             background: #e4e7eb;
             color: #333;
+            padding: 10px 5px;
+            font-size: 13px;
         }
 
         .nav-tabs button.active {
@@ -240,9 +282,16 @@
 
         .app-footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 25px;
             font-size: 12px;
             color: #888;
+        }
+
+        @media (min-width: 650px) {
+            .participant-row {
+                flex-direction: row;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
@@ -269,7 +318,7 @@
             <select id="locationSelect"></select>
             <div class="inline-add" style="margin-top: 8px;">
                 <input type="text" id="newLocationInput" placeholder="Nowa lokalizacja (np. RCKiK Warszawa)">
-                <button type="button" onclick="addLocation()">Dodaj lokalizację</button>
+                <button type="button" onclick="addLocation()">Dodaj</button>
             </div>
         </div>
 
@@ -279,7 +328,7 @@
             <select id="vehicleSelect"></select>
             <div class="inline-add" style="margin-top: 8px;">
                 <input type="text" id="newVehicleInput" placeholder="Nowy samochód (Marka, Nr rej)">
-                <button type="button" onclick="addVehicle()">Dodaj samochód</button>
+                <button type="button" onclick="addVehicle()">Dodaj</button>
             </div>
         </div>
 
@@ -295,8 +344,8 @@
             </div>
         </div>
 
-        <!-- Daty i godziny -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <!-- Daty i godziny w responsywnym kontenerze -->
+        <div class="date-inputs-row">
             <div class="form-group">
                 <label for="departureTime">Data i godzina wyjazdu:</label>
                 <input type="datetime-local" id="departureTime" onchange="calculateAllowancePreview()">
@@ -343,16 +392,18 @@
     <!-- HISTORIA -->
     <div class="card history-container" id="history-card">
         <h2>Historia Delegacji</h2>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
             <div>
-                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj pracownika:</label>
+                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj:</label>
                 <select id="filterEmployee" onchange="renderHistory()" style="padding: 5px; font-size: 13px; display:inline-block; width: auto;">
                     <option value="">Wszyscy pracownicy</option>
                 </select>
             </div>
             <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść historię</button>
         </div>
-        <div id="historyTableContainer"></div>
+        <div class="table-responsive">
+            <div id="historyTableContainer"></div>
+        </div>
         <button type="button" class="secondary" onclick="switchTab('form')" style="margin-top: 15px;">← Powrót do formularza</button>
     </div>
 
@@ -363,7 +414,7 @@
 </div>
 
 <script>
-    const STORAGE_KEY = 'rckik_app_data_v5';
+    const STORAGE_KEY = 'rckik_app_data_v6';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -469,20 +520,20 @@
             const row = document.createElement('div');
             row.className = 'participant-row';
             row.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <div title="Kto wypełnia ten protokół?" style="font-size:12px; color:#c0392b; font-weight:600;">
+                <div class="participant-actions">
+                    <span style="font-size:12px; color:#c0392b; font-weight:600;">
                         Wypełnia: <input type="radio" name="authorRadio" value="${emp.name}" data-email="${DEFAULT_MANAGER_EMAIL}" ${index === 0 ? 'checked' : ''} style="cursor:pointer;" onchange="updateParticipantRoles()">
-                    </div>
-                    <div title="Współuczestnik wyjazdu">
+                    </span>
+                    <span style="font-size:12px;">
                         Towarzyszy: <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" id="co_${index}" style="cursor:pointer;">
-                    </div>
+                    </span>
                     <label for="co_${index}" style="cursor:pointer; margin:0; font-weight:normal;">
                         <b>${emp.name}</b>
                     </label>
                 </div>
                 <div class="file-input-container">
                     <label for="file_${index}" style="font-size:12px; margin:0; color:#555;">Rachunek/Faktura:</label>
-                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="max-width: 200px;">
+                    <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf">
                 </div>
             `;
             container.appendChild(row);
@@ -678,12 +729,12 @@ ${authorName}`;
         emailDiv.innerHTML = `
             <div class="email-header">
                 E-mail do: <span style="color:var(--primary-color);">${targetEmail}</span> (Wypełnia: <b>${authorName}</b>)
-                <span class="badge" style="float: right;">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
+                <span class="badge">Dieta: ${allowanceAmount.toFixed(2)} zł | Załącznik: ${fileName}</span>
             </div>
             <div style="font-size: 13px; margin-bottom: 5px;"><strong>Temat:</strong> ${emailSubject}</div>
             <div class="email-body">${emailBody}</div>
             <div class="actions-row">
-                <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść e-maila</button>
+                <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
                 <a href="mailto:${targetEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" style="font-size: 14px; text-decoration: none; color: #2980b9; font-weight: bold;">Wyślij przez Outlook/Pocztę ✉</a>
             </div>
         `;
@@ -698,7 +749,7 @@ ${authorName}`;
         const text = decodeURIComponent(button.getAttribute('data-text'));
         navigator.clipboard.writeText(text).then(() => {
             const originalText = button.textContent;
-            button.textContent = 'Skopiowano do schowka! ✓';
+            button.textContent = 'Skopiowano! ✓';
             button.style.backgroundColor = '#27ae60';
             setTimeout(() => {
                 button.textContent = originalText;
