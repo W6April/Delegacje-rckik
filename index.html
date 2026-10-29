@@ -26,6 +26,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 12px;
+            overflow-x: hidden; /* Zabezpieczenie przed paskiem po animacji */
         }
 
         .container { max-width: 950px; margin: 0 auto; width: 100%; }
@@ -96,6 +97,21 @@
             cursor: pointer;
         }
         .btn-email:hover { background-color: #2471a3; }
+
+        /* Animacja Deszczu Pieniędzy */
+        @keyframes fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        .money-drop {
+            position: fixed;
+            top: -50px;
+            font-size: 35px;
+            z-index: 9999;
+            pointer-events: none;
+            animation: fall linear forwards;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
@@ -243,7 +259,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v18';
+    const STORAGE_KEY = 'rckik_app_data_v19';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -535,10 +551,11 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 Z poważaniem,
 ${authorName}`;
 
+        // Dodanie updatedAt przy tworzeniu zapewnia, że najnowszy protokół zawsze wejdzie gładko
         appData.history.unshift({
             id: Date.now(), dateCreated: new Date().toLocaleString(), location, vehicle, departure: departure.replace('T', ' '),
             return: returnT.replace('T', ' '), purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
-            allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName, settled: false
+            allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName, settled: false, updatedAt: Date.now()
         });
         saveAppData();
 
@@ -569,10 +586,28 @@ ${authorName}`;
         });
     }
     
+    // Zrzucanie kasy
+    function showMoneyAnimation() {
+        const emojis = ['💰', '💵', '🪙', '💸'];
+        for (let i = 0; i < 40; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'money-drop';
+            drop.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            drop.style.left = Math.random() * 100 + 'vw';
+            drop.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            drop.style.animationDelay = (Math.random() * 0.5) + 's';
+            drop.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            document.body.appendChild(drop);
+            
+            setTimeout(() => drop.remove(), 4500);
+        }
+    }
+
     function syncAfterEmail() {
+        showMoneyAnimation();
         setTimeout(() => {
             uploadToCloud();
-        }, 800);
+        }, 1200);
     }
 
     function switchTab(tab) {
@@ -636,9 +671,10 @@ ${authorName}`;
         const item = appData.history.find(i => i.id === id);
         if (item) {
             item.settled = isChecked;
+            item.updatedAt = Date.now(); // Zapisujemy czas modyfikacji, zeby nadpisalo to odpowiednio w chmurze
             saveAppData();
             
-            if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę do chmury, aby inni też widzieli ten status?')) {
+            if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę od razu do chmury, aby inni (Kierownik) też to widzieli?')) {
                 uploadToCloud();
             }
         }
@@ -694,27 +730,36 @@ ${authorName}`;
     function mergeWithCloudData(cloudRecord) {
         if (!appData.deletedIds) appData.deletedIds = [];
         
+        // 1. Złącz kosz (usunięte raporty z chmury i lokalnie)
         const cloudDeleted = cloudRecord.deletedIds || [];
         appData.deletedIds = Array.from(new Set([...appData.deletedIds, ...cloudDeleted]));
 
+        // 2. Połącz historie (zabezpieczenie nadpisywania starszych nowszymi)
         const historyMap = new Map();
         
+        // Wrzucamy dane z serwera
         (cloudRecord.history || []).forEach(item => {
             if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
         });
         
+        // Wrzucamy nasze lokalne (jeżeli nasze jest nowsze - po dacie updatedAt - to wygrywa)
         (appData.history || []).forEach(item => {
             if (!appData.deletedIds.includes(item.id)) {
                 const existing = historyMap.get(item.id);
                 if (existing) {
-                    item.settled = item.settled || existing.settled;
+                    // Jeśli lokalny plik był modyfikowany pozniej niz ten w chmurze
+                    if ((item.updatedAt || 0) > (existing.updatedAt || 0)) {
+                        historyMap.set(item.id, item);
+                    }
+                } else {
+                    historyMap.set(item.id, item);
                 }
-                historyMap.set(item.id, item);
             }
         });
         
         appData.history = Array.from(historyMap.values()).sort((a,b) => b.id - a.id);
 
+        // 3. Bezpieczne łączenie słowników
         appData.locations = Array.from(new Set([...(cloudRecord.locations || []), ...(appData.locations || [])]));
         appData.vehicles = Array.from(new Set([...(cloudRecord.vehicles || []), ...(appData.vehicles || [])]));
         
@@ -752,12 +797,12 @@ ${authorName}`;
                 renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown();
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 
-                if(btn) alert("Super! Baza i nowe raporty zostały wysłane do chmury (nic nie zostało skasowane).");
+                if(btn && btn.id === 'btnUploadCloud') alert("Baza została pomyślnie zaktualizowana w chmurze.");
             } else { 
-                if(btn) alert("Błąd zapisu do chmury."); 
+                if(btn && btn.id === 'btnUploadCloud') alert("Błąd zapisu do chmury."); 
             }
         } catch(e) { 
-            if(btn) alert("Błąd połączenia z internetem."); 
+            if(btn && btn.id === 'btnUploadCloud') alert("Błąd połączenia z internetem."); 
         }
         if(btn) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
