@@ -217,14 +217,15 @@
     <div class="card cloud-container" id="cloud-card">
         <h2>☁️ Baza Współdzielona</h2>
         <p style="font-size: 13.5px; color: #555; margin-bottom: 20px;">
-            System używa inteligentnego łączenia. Twoje dane i dane kolegów zostaną połączone, a nowości dopisane (nic nie zostanie nadpisane). 
+            System używa inteligentnego łączenia. Twoje dane i dane kolegów zostaną połączone, a nowości dopisane (nic nie zostanie nadpisane). <br>
+            <i>Aplikacja automatycznie pobiera zmiany w tle podczas każdego uruchomienia.</i>
         </p>
         
         <div class="sync-info" id="syncStatusUI">
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
 
-        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
+        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
     </div>
 
@@ -242,7 +243,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v16';
+    const STORAGE_KEY = 'rckik_app_data_v17';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -437,13 +438,14 @@
         
         if (totalHours < 24) {
             if (totalHours < 8) return 0;
-            return dailyRate; // >= 8 godzin daje pełną dietę w ciągu doby
+            if (totalHours <= 12) return dailyRate * 0.5; // Do 12 godzin to połowa diety
+            return dailyRate; // Od 12 do 24 godzin to pełna dieta
         } else {
             let allowance = Math.floor(totalHours / 24) * dailyRate;
             const rem = totalHours % 24;
             if (rem > 0) {
-                if (rem < 8) allowance += dailyRate * 0.5; // do 8 h = pół
-                else allowance += dailyRate;               // od 8 h = cała
+                if (rem <= 8) allowance += dailyRate * 0.5; // Kolejna doba rozpoczęta do 8h = 50%
+                else allowance += dailyRate;                // Kolejna doba powyżej 8h = 100%
             }
             return allowance;
         }
@@ -676,7 +678,7 @@ ${authorName}`;
     
     function resetForm() { 
         switchTab('form'); 
-        // usunąłem setDefaultDates() aby zapamiętywało to, co było wpisane
+        // Brak usuwania wpisanych danych (pamięć edycji zachowana)
         calculateAllowancePreview(); 
     }
     
@@ -708,7 +710,6 @@ ${authorName}`;
             if (!appData.deletedIds.includes(item.id)) {
                 const existing = historyMap.get(item.id);
                 if (existing) {
-                    // Zachowaj status rozliczenia z urządzenia, na którym zostało to zaznaczone
                     item.settled = item.settled || existing.settled;
                 }
                 historyMap.set(item.id, item);
@@ -754,20 +755,25 @@ ${authorName}`;
                 appData.lastSync = new Date().toLocaleString();
                 saveAppData(); 
                 updateSyncDateUI();
-                initApp(); // odśwież widok
-                alert("Super! Baza i nowe raporty zostały wysłane do chmury (nic nie zostało skasowane).");
+                
+                // Ciche odświeżenie bez wymuszania całego initApp by nie gubić danych formularza
+                renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown();
+                if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                
+                // Informujemy tylko jeśli wywołano to ręcznie guzikiem z zakładki Chmura
+                if(btn) alert("Super! Baza i nowe raporty zostały wysłane do chmury (nic nie zostało skasowane).");
             } else { 
-                alert("Błąd zapisu do chmury."); 
+                if(btn) alert("Błąd zapisu do chmury."); 
             }
         } catch(e) { 
-            alert("Błąd połączenia z internetem."); 
+            if(btn) alert("Błąd połączenia z internetem."); 
         }
         if(btn) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
 
-    async function downloadFromCloud() {
+    async function downloadFromCloud(silent = false) {
         const btn = document.getElementById('btnDownloadCloud');
-        btn.textContent = "Pobieranie...";
+        if (!silent && btn) btn.textContent = "Pobieranie...";
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 headers: { 'X-Master-Key': CLOUD_API_KEY }
@@ -775,19 +781,29 @@ ${authorName}`;
             if (res.ok) {
                 const data = await res.json();
                 if(data.record) {
-                    // Połącz pobrane z chmury z naszymi lokalnymi
                     mergeWithCloudData(data.record);
-                    
                     appData.lastSync = new Date().toLocaleString();
-                    saveAppData(); initApp();
-                    alert("Sukces! Baza pobrana i inteligentnie połączona.");
+                    saveAppData(); 
+                    
+                    // Bezpieczne odświeżenie widoków (nie psuje formularza gdy pobiera w tle)
+                    renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown(); updateSyncDateUI();
+                    if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                    
+                    if (!silent) alert("Sukces! Baza pobrana i inteligentnie połączona.");
                 }
-            } else { alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); }
-        } catch(e) { alert("Błąd połączenia z internetem."); }
-        btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
+            } else { 
+                if (!silent) alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); 
+            }
+        } catch(e) { 
+            if (!silent) alert("Błąd połączenia z internetem."); 
+        }
+        if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
     }
 
-    window.onload = initApp;
+    window.onload = () => {
+        initApp();
+        downloadFromCloud(true); // Pobiera z chmury po cichu w tle podczas uruchamiania
+    };
 </script>
 
 </body>
