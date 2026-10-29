@@ -72,7 +72,6 @@
         .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px; }
         .badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
-        /* Skompresowana tabela pod widok mobilny - usunięto min-width */
         .table-responsive { width: 100%; overflow-x: auto; }
         .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         .history-table th, .history-table td { border-bottom: 1px solid var(--border-color); padding: 10px 6px; text-align: left; vertical-align: middle; }
@@ -86,10 +85,7 @@
         .nav-tabs button { flex: 1; background: #e4e7eb; color: #333; padding: 10px 5px; font-size: 13px; min-width: 100px;}
         .nav-tabs button.active { background: var(--primary-color); color: white; }
 
-        .app-footer { text-align: center; margin-top: 25px; font-size: 12px; color: #888; }
-        .manage-box { display: none; background: #f1f2f6; border: 1px solid #ced6e0; padding: 12px; border-radius: 6px; margin-top: 10px; }
-        .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
-        .manage-item:last-child { border-bottom: none; }
+        .app-footer { text-align: center; margin-top: 25px; font-size: 12px; color: #888; border-top: 1px dashed #ccc; padding-top: 15px; }
         
         .sync-info { background: #e8f8f5; border: 1px solid #a3e4d7; padding: 15px; border-radius: 8px; font-size: 14px; color: #0e6655; margin-bottom: 20px; text-align: center;}
         
@@ -103,7 +99,6 @@
         }
         .btn-email:hover { background-color: #2471a3; }
 
-        /* Animacja Deszczu Pieniędzy */
         @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
@@ -158,19 +153,19 @@
         <div class="form-group">
             <label>Uczestnicy delegacji:</label>
             <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b>.</p>
-            <div class="participants-container" id="participantsGroup"></div>
+            
+            <!-- Widoczni pracownicy -->
+            <div class="participants-container" id="mainParticipantsList"></div>
+            
+            <!-- Ukryci pracownicy (drzewko) -->
+            <details style="margin-top: 12px; margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
+                <summary style="cursor: pointer; font-size: 13px; font-weight: bold; color: #555;">Pokaż pozostałych (ukrytych) pracowników</summary>
+                <div id="hiddenParticipantsList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
+            </details>
             
             <div class="inline-add" style="margin-top: 10px;">
                 <input type="text" id="newEmployeeInput" placeholder="Imię i Nazwisko nowego pracownika">
                 <button type="button" onclick="addEmployee()">Dodaj pracownika</button>
-            </div>
-
-            <div style="margin-top: 8px;">
-                <button type="button" class="secondary" onclick="toggleManageEmployees()" style="font-size: 12px; padding: 6px 12px;">⚙ Zarządzaj widocznością pracowników</button>
-            </div>
-            <div id="manageEmployeesBox" class="manage-box">
-                <div style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">Widoczność na liście głównej:</div>
-                <div id="manageEmployeesList"></div>
             </div>
         </div>
 
@@ -219,7 +214,7 @@
         <h2>Historia Delegacji</h2>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
             <div>
-                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj:</label>
+                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj wg zgłaszającego:</label>
                 <select id="filterEmployee" onchange="renderHistory()" style="padding: 5px; font-size: 13px; display:inline-block; width: auto;">
                     <option value="">Wszyscy pracownicy</option>
                 </select>
@@ -248,11 +243,10 @@
 
         <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
-    </div>
-
-    <!-- STOPKA -->
-    <div class="app-footer">
-        Ostatnia aktualizacja: 26 października 2026
+        
+        <div class="app-footer">
+            Ostatnia aktualizacja: 29 października 2026
+        </div>
     </div>
 </div>
 
@@ -264,7 +258,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v24'; 
+    const STORAGE_KEY = 'rckik_app_data_v26'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -316,7 +310,7 @@
     function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
 
     function initApp() {
-        renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
+        renderLocations(); renderVehicles(); renderEmployees(); 
         
         if (!document.getElementById('departureTime').value) {
             setDefaultDates(); 
@@ -347,22 +341,32 @@
     function renderVehicles() {
         const select = document.getElementById('vehicleSelect'); if (!select) return;
         select.innerHTML = '';
-        appData.vehicles.forEach(veh => { const opt = document.createElement('option'); opt.value = veh; opt.textContent = veh; select.appendChild(opt); });
+        appData.vehicles.forEach(veh => { 
+            const opt = document.createElement('option'); 
+            opt.value = veh; 
+            opt.textContent = veh; // Usunięto emotikony z aut
+            select.appendChild(opt); 
+        });
     }
 
     function renderEmployees() {
-        const container = document.getElementById('participantsGroup'); if (!container) return;
-        container.innerHTML = '';
-        const visibleEmployees = appData.employees.filter(emp => !emp.hidden);
-        if (visibleEmployees.length === 0) {
-            container.innerHTML = '<div style="color:#777; font-size:13px; padding:10px;">Brak widocznych pracowników. Włącz ich w panelu zarządzania.</div>';
-            return;
-        }
+        const mainContainer = document.getElementById('mainParticipantsList'); 
+        const hiddenContainer = document.getElementById('hiddenParticipantsList'); 
+        if (!mainContainer || !hiddenContainer) return;
+        
+        mainContainer.innerHTML = '';
+        hiddenContainer.innerHTML = '';
 
-        visibleEmployees.forEach((emp, index) => {
-            const row = document.createElement('div'); row.className = 'participant-row';
+        appData.employees.forEach((emp, index) => {
+            const row = document.createElement('div'); 
+            row.className = 'participant-row';
             row.innerHTML = `
-                <div style="flex: 1; min-width: 150px;"><b style="font-size: 14px;">${emp.name}</b></div>
+                <div style="flex: 1; min-width: 150px; display: flex; justify-content: space-between; align-items: center;">
+                    <b style="font-size: 14px;">${emp.name}</b>
+                    <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: none; border: none; color: #7f8c8d; font-size: 11px; cursor: pointer; text-decoration: underline;" title="${emp.hidden ? 'Przenieś do głównych' : 'Ukryj w drzewku'}">
+                        ${emp.hidden ? '⬆️ Pokaż' : '⬇️ Ukryj'}
+                    </button>
+                </div>
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                     <label style="font-size:12px; color:#c0392b; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
                         <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()"> Wypełnia
@@ -375,34 +379,19 @@
                     <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="width: 100%; max-width:200px;">
                 </div>
             `;
-            container.appendChild(row);
+            
+            if (emp.hidden) {
+                hiddenContainer.appendChild(row);
+            } else {
+                mainContainer.appendChild(row);
+            }
         });
         updateParticipantRoles();
     }
 
-    function toggleManageEmployees() {
-        const box = document.getElementById('manageEmployeesBox'); box.style.display = box.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function renderManageEmployeesList() {
-        const container = document.getElementById('manageEmployeesList'); if (!container) return;
-        container.innerHTML = '';
-        appData.employees.forEach((emp, index) => {
-            const item = document.createElement('div'); item.className = 'manage-item';
-            const isHidden = !!emp.hidden;
-            item.innerHTML = `
-                <span style="${isHidden ? 'color: #888; text-decoration: line-through;' : 'font-weight: 600;'}">${emp.name} ${isHidden ? '(wygaszony)' : ''}</span>
-                <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: ${isHidden ? '#27ae60' : '#e67e22'};" onclick="toggleEmployeeVisibility(${index})">
-                    ${isHidden ? 'Przywróć na listę' : 'Wygas'}
-                </button>
-            `;
-            container.appendChild(item);
-        });
-    }
-
     function toggleEmployeeVisibility(index) {
         appData.employees[index].hidden = !appData.employees[index].hidden;
-        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown();
+        saveAppData(); renderEmployees(); populateFilterDropdown();
     }
 
     function updateParticipantRoles() {
@@ -423,7 +412,7 @@
         const currentVal = sel.value; 
         sel.innerHTML = '<option value="">Wszyscy pracownicy</option>';
         appData.employees.forEach(emp => {
-            const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name + (emp.hidden ? ' (wygaszony)' : ''); sel.appendChild(opt);
+            const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name; sel.appendChild(opt);
         });
         sel.value = currentVal; 
     }
@@ -447,7 +436,7 @@
         if (!name) return alert('Wpisz imię i nazwisko pracownika.');
         if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
-        saveAppData(); renderEmployees(); renderManageEmployeesList(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
+        saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
     }
 
     function calculateAllowance(depStr, retStr) {
@@ -458,14 +447,14 @@
         
         if (totalHours < 24) {
             if (totalHours < 8) return 0;
-            if (totalHours <= 12) return dailyRate * 0.5; // Do 12 godzin to połowa diety
-            return dailyRate; // Od 12 do 24 godzin to pełna dieta
+            if (totalHours <= 12) return dailyRate * 0.5;
+            return dailyRate;
         } else {
             let allowance = Math.floor(totalHours / 24) * dailyRate;
             const rem = totalHours % 24;
             if (rem > 0) {
-                if (rem <= 8) allowance += dailyRate * 0.5; // Kolejna doba rozpoczęta do 8h = 50%
-                else allowance += dailyRate;                // Kolejna doba powyżej 8h = 100%
+                if (rem <= 8) allowance += dailyRate * 0.5;
+                else allowance += dailyRate; 
             }
             return allowance;
         }
@@ -473,7 +462,6 @@
 
     function calculateDurationString(depStr, retStr) {
         if (!depStr || !retStr) return 'Brak danych';
-        // Zamiana " " z powrotem na "T" jeśli w historii jest spacja, dla poprawnego parsowania
         const start = new Date(depStr.replace(' ', 'T'));
         const end = new Date(retStr.replace(' ', 'T'));
         const diffMs = end - start;
@@ -507,7 +495,6 @@
         const formattedDeparture = departure.replace('T', ' ');
         const formattedReturn = returnT.replace('T', ' ');
 
-        // --- BLOKADA DUPLIKATÓW ---
         const isDuplicate = appData.history.some(item => 
             item.author === authorName && 
             item.departure === formattedDeparture && 
@@ -518,7 +505,6 @@
             alert('Uwaga! W tej dacie i godzinach już zgłaszałeś protokół.');
             return;
         }
-        // --------------------------
 
         const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
         const location = document.getElementById('locationSelect').value;
@@ -621,7 +607,6 @@ ${authorName}`;
         });
     }
     
-    // Zrzucanie kasy
     function showMoneyAnimation() {
         const emojis = ['💰', '💵', '🪙', '💸'];
         for (let i = 0; i < 40; i++) {
@@ -653,7 +638,6 @@ ${authorName}`;
         }, 1200);
     }
 
-    // --- WYSYŁANIE ZALEGŁYCH MAILI BEZPOŚREDNIO Z HISTORII ---
     function sendEmailFromHistory(id) {
         const item = appData.history.find(i => i.id === id);
         if(!item) return;
@@ -710,7 +694,6 @@ ${item.author}`;
         syncAfterEmail(null); 
     }
 
-    // --- KOPIUJ I WYŚLIJ JAKO ---
     function copyToForm(id) {
         const item = appData.history.find(i => i.id === id);
         if (!item) return;
@@ -771,7 +754,6 @@ ${item.author}`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- ROZWIJANIE SZCZEGÓŁÓW HISTORII (NAPRAWIONE NA 1 KLIK) ---
     function toggleDetails(id) {
         const row = document.getElementById('details-' + id);
         const icon = document.getElementById('icon-' + id);
@@ -792,7 +774,8 @@ ${item.author}`;
         
         let hist = appData.history;
         if (filterEmp) {
-            hist = hist.filter(i => i.author === filterEmp || i.coParticipants.includes(filterEmp));
+            // Filtrujemy TYLKO po autorze protokołu
+            hist = hist.filter(i => i.author === filterEmp);
             btnDeleteFiltered.style.display = 'inline-block';
         } else {
             btnDeleteFiltered.style.display = 'none';
@@ -814,7 +797,6 @@ ${item.author}`;
             const shortDate = i.departure.split(' ')[0]; 
             const workDesc = i.workDescription || i.purpose || 'Brak';
             
-            // Logika wyświetlania statusu lub przycisku e-maila
             let emailActionHtml = '';
             if (i.settled) {
                 emailActionHtml = `<span style="color: #7f8c8d; font-style: italic; font-size: 12px; font-weight: bold;">🔒 Protokół zamknięty (rozliczony)</span>`;
@@ -894,7 +876,7 @@ ${item.author}`;
     }
 
     function clearHistory() { 
-        if (confirm('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników? (Zniknie dla każdego po zsynchronizowaniu!)')) { 
+        if (prompt('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników? (Zniknie dla każdego po zsynchronizowaniu!)\n\nWpisz słowo TAK aby potwierdzić:') === 'TAK') { 
             if (!appData.deletedIds) appData.deletedIds = [];
             appData.history.forEach(i => appData.deletedIds.push(i.id));
             appData.history = []; saveAppData(); renderHistory(); 
@@ -904,14 +886,14 @@ ${item.author}`;
     function clearFilteredHistory() {
         const filterEmp = document.getElementById('filterEmployee').value;
         if (!filterEmp) return;
-        if (confirm(`Czy usunąć bezpowrotnie WSZYSTKIE raporty powiązane z pracownikiem: ${filterEmp}? (Znikną dla każdego po zsynchronizowaniu!)`)) {
+        if (prompt(`UWAGA! Czy usunąć bezpowrotnie WSZYSTKIE raporty powiązane z pracownikiem: ${filterEmp}?\n\nWpisz słowo TAK aby potwierdzić:`) === 'TAK') {
             if (!appData.deletedIds) appData.deletedIds = [];
             appData.history.forEach(i => {
-                if (i.author === filterEmp || i.coParticipants.includes(filterEmp)) {
+                if (i.author === filterEmp) {
                     appData.deletedIds.push(i.id);
                 }
             });
-            appData.history = appData.history.filter(i => !(i.author === filterEmp || i.coParticipants.includes(filterEmp)));
+            appData.history = appData.history.filter(i => i.author !== filterEmp);
             saveAppData();
             renderHistory();
         }
@@ -929,7 +911,6 @@ ${item.author}`;
         }
     }
 
-    // --- SYSTEM INTELIGENTNEGO ŁĄCZENIA BAZ (MERGE) ---
     function mergeWithCloudData(cloudRecord) {
         if (!appData.deletedIds) appData.deletedIds = [];
         
@@ -991,7 +972,7 @@ ${item.author}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 
-                renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown();
+                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown();
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 
             } else { 
@@ -1017,7 +998,7 @@ ${item.author}`;
                     appData.lastSync = new Date().toLocaleString();
                     saveAppData(); 
                     
-                    renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown(); updateSyncDateUI();
+                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); updateSyncDateUI();
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
                     
                     if (!silent) alert("Sukces! Baza pobrana i inteligentnie połączona.");
