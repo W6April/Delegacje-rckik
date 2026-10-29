@@ -72,7 +72,7 @@
         .badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
         .table-responsive { width: 100%; overflow-x: auto; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; min-width: 600px; }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; min-width: 650px; }
         .history-table th, .history-table td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; vertical-align: middle; }
         .history-table th { background-color: #f1f2f6; }
 
@@ -90,9 +90,10 @@
         .btn-email {
             display: inline-flex; align-items: center; gap: 6px;
             background-color: #2980b9; color: white !important; 
-            padding: 10px 16px; text-decoration: none; 
+            padding: 12px 18px; text-decoration: none; 
             border-radius: 4px; font-weight: 600; font-size: 14px; 
             transition: background-color 0.2s;
+            cursor: pointer;
         }
         .btn-email:hover { background-color: #2471a3; }
     </style>
@@ -241,7 +242,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v15';
+    const STORAGE_KEY = 'rckik_app_data_v16';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -294,7 +295,13 @@
 
     function initApp() {
         renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
-        setDefaultDates(); populateFilterDropdown(); calculateAllowancePreview();
+        
+        // Ustawia domyślne daty tylko przy PIERWSZYM uruchomieniu
+        if (!document.getElementById('departureTime').value) {
+            setDefaultDates(); 
+        }
+        
+        populateFilterDropdown(); calculateAllowancePreview();
         updateSyncDateUI();
     }
 
@@ -427,14 +434,17 @@
         const totalHours = (new Date(retStr) - new Date(depStr)) / (1000 * 60 * 60);
         if (totalHours <= 0) return 0;
         const dailyRate = 45.0;
+        
         if (totalHours < 24) {
             if (totalHours < 8) return 0;
-            if (totalHours <= 12) return dailyRate * 0.5;
-            return dailyRate;
+            return dailyRate; // >= 8 godzin daje pełną dietę w ciągu doby
         } else {
             let allowance = Math.floor(totalHours / 24) * dailyRate;
             const rem = totalHours % 24;
-            if (rem > 0) allowance += (rem <= 8) ? dailyRate * 0.5 : dailyRate;
+            if (rem > 0) {
+                if (rem < 8) allowance += dailyRate * 0.5; // do 8 h = pół
+                else allowance += dailyRate;               // od 8 h = cała
+            }
             return allowance;
         }
     }
@@ -527,7 +537,7 @@ ${authorName}`;
         appData.history.unshift({
             id: Date.now(), dateCreated: new Date().toLocaleString(), location, vehicle, departure: departure.replace('T', ' '),
             return: returnT.replace('T', ' '), purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
-            allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName
+            allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName, settled: false
         });
         saveAppData();
 
@@ -542,8 +552,8 @@ ${authorName}`;
                 <div class="email-body">${emailBody}</div>
                 <div class="actions-row">
                     <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
-                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email">
-                        ✉️ Wyślij e-mail
+                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email" onclick="syncAfterEmail()" target="_blank">
+                        ✉️ Wyślij e-mail i aktualizuj bazę
                     </a>
                 </div>
             </div>
@@ -556,6 +566,13 @@ ${authorName}`;
             const org = btn.textContent; btn.textContent = 'Skopiowano! ✓'; btn.style.backgroundColor = '#27ae60';
             setTimeout(() => { btn.textContent = org; btn.style.backgroundColor = ''; }, 2000);
         });
+    }
+    
+    function syncAfterEmail() {
+        // Opóźnia uruchomienie wysyłania do chmury, aby najpierw odpalił się klient mailowy
+        setTimeout(() => {
+            uploadToCloud();
+        }, 800);
     }
 
     function switchTab(tab) {
@@ -597,7 +614,7 @@ ${authorName}`;
         
         if (hist.length === 0) return container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii do wyświetlenia.</p>';
 
-        let html = `<table class="history-table"><thead><tr><th>Data</th><th>Osoby</th><th>Lokalizacja/Pojazd</th><th>Termin/Dieta</th><th>Akcje</th></tr></thead><tbody>`;
+        let html = `<table class="history-table"><thead><tr><th>Data</th><th>Osoby</th><th>Lokalizacja/Pojazd</th><th>Termin/Dieta</th><th>Rozliczono</th><th>Akcje</th></tr></thead><tbody>`;
         hist.forEach(i => {
             html += `<tr>
                 <td>${i.dateCreated}</td>
@@ -605,11 +622,22 @@ ${authorName}`;
                 <td><b>${i.location}</b><br><small>${i.vehicle}</small></td>
                 <td>${i.departure} - ${i.return}<br><b>${i.allowance}</b></td>
                 <td style="text-align: center; vertical-align: middle;">
+                    <input type="checkbox" style="transform: scale(1.5); cursor: pointer;" onchange="toggleSettled(${i.id}, this.checked)" ${i.settled ? 'checked' : ''} title="Zaznacz jeśli rozliczone">
+                </td>
+                <td style="text-align: center; vertical-align: middle;">
                     <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
                 </td>
             </tr>`;
         });
         container.innerHTML = html + '</tbody></table>';
+    }
+
+    function toggleSettled(id, isChecked) {
+        const item = appData.history.find(i => i.id === id);
+        if (item) {
+            item.settled = isChecked;
+            saveAppData();
+        }
     }
 
     function deleteHistoryItem(id) {
@@ -646,7 +674,12 @@ ${authorName}`;
         }
     }
     
-    function resetForm() { switchTab('form'); setDefaultDates(); calculateAllowancePreview(); }
+    function resetForm() { 
+        switchTab('form'); 
+        // usunąłem setDefaultDates() aby zapamiętywało to, co było wpisane
+        calculateAllowancePreview(); 
+    }
+    
     function resetToDefaults() {
         if (confirm('Czy na pewno chcesz zresetować słowniki?')) {
             appData.locations = [...defaultData.locations]; appData.vehicles = [...defaultData.vehicles]; appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
@@ -670,9 +703,16 @@ ${authorName}`;
             if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
         });
         
-        // Nasze lokalne nadpiszą/dodadzą się na końcu
+        // Nasze lokalne aktualizują chmurę (w tym status rozliczenia)
         (appData.history || []).forEach(item => {
-            if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
+            if (!appData.deletedIds.includes(item.id)) {
+                const existing = historyMap.get(item.id);
+                if (existing) {
+                    // Zachowaj status rozliczenia z urządzenia, na którym zostało to zaznaczone
+                    item.settled = item.settled || existing.settled;
+                }
+                historyMap.set(item.id, item);
+            }
         });
         
         // Sortowanie malejąco po ID (najnowsze na górze)
@@ -690,7 +730,7 @@ ${authorName}`;
 
     async function uploadToCloud() {
         const btn = document.getElementById('btnUploadCloud');
-        btn.textContent = "Łączenie i wysyłanie...";
+        if(btn) btn.textContent = "Łączenie i wysyłanie...";
         
         try {
             // NAJPIERW pobierz z chmury i połącz (żeby nie nadpisać kolegów!)
@@ -715,14 +755,14 @@ ${authorName}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 initApp(); // odśwież widok
-                alert("Super! Twoje raporty zostały połączone z chmurą i wysłane (nic nie zostało skasowane).");
+                alert("Super! Baza i nowe raporty zostały wysłane do chmury (nic nie zostało skasowane).");
             } else { 
                 alert("Błąd zapisu do chmury."); 
             }
         } catch(e) { 
             alert("Błąd połączenia z internetem."); 
         }
-        btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
+        if(btn) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
 
     async function downloadFromCloud() {
@@ -740,7 +780,7 @@ ${authorName}`;
                     
                     appData.lastSync = new Date().toLocaleString();
                     saveAppData(); initApp();
-                    alert("Sukces! Baza pobrana i inteligentnie połączona. Twoje nienysłane raporty są bezpieczne.");
+                    alert("Sukces! Baza pobrana i inteligentnie połączona.");
                 }
             } else { alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); }
         } catch(e) { alert("Błąd połączenia z internetem."); }
