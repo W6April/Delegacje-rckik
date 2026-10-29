@@ -26,7 +26,7 @@
             color: var(--text-color);
             margin: 0;
             padding: 12px;
-            overflow-x: hidden; /* Zabezpieczenie przed paskiem po animacji */
+            overflow-x: hidden;
         }
 
         .container { max-width: 950px; margin: 0 auto; width: 100%; }
@@ -259,7 +259,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v19';
+    const STORAGE_KEY = 'rckik_app_data_v20';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -498,6 +498,22 @@
         if (!departure || !returnT) return alert('Uzupełnij daty wyjazdu i powrotu.');
 
         const authorName = authorRadio.value;
+        const formattedDeparture = departure.replace('T', ' ');
+        const formattedReturn = returnT.replace('T', ' ');
+
+        // --- BLOKADA DUPLIKATÓW ---
+        const isDuplicate = appData.history.some(item => 
+            item.author === authorName && 
+            item.departure === formattedDeparture && 
+            item.return === formattedReturn
+        );
+
+        if (isDuplicate) {
+            alert('Uwaga! W tej dacie i godzinach już zgłaszałeś protokół.');
+            return; // Przerywa generowanie protokołu
+        }
+        // --------------------------
+
         const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
         const location = document.getElementById('locationSelect').value;
         const vehicle = document.getElementById('vehicleSelect').value;
@@ -528,10 +544,10 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
   ${vehicle}
 
 • Termin wyjazdu:
-  ${departure.replace('T', ' ')}
+  ${formattedDeparture}
 
 • Termin powrotu:
-  ${returnT.replace('T', ' ')}
+  ${formattedReturn}
 
 • Łączny czas trwania:
   ${durationStr}
@@ -551,10 +567,9 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 Z poważaniem,
 ${authorName}`;
 
-        // Dodanie updatedAt przy tworzeniu zapewnia, że najnowszy protokół zawsze wejdzie gładko
         appData.history.unshift({
-            id: Date.now(), dateCreated: new Date().toLocaleString(), location, vehicle, departure: departure.replace('T', ' '),
-            return: returnT.replace('T', ' '), purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
+            id: Date.now(), dateCreated: new Date().toLocaleString(), location, vehicle, departure: formattedDeparture,
+            return: formattedReturn, purpose: purpose || 'Brak', author: authorName, coParticipants: coParts,
             allowance: allowanceAmount.toFixed(2) + ' zł', attachment: fileName, settled: false, updatedAt: Date.now()
         });
         saveAppData();
