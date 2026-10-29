@@ -26,7 +26,6 @@
             color: var(--text-color);
             margin: 0;
             padding: 12px;
-            overflow-x: hidden;
         }
 
         .container { max-width: 950px; margin: 0 auto; width: 100%; }
@@ -216,13 +215,15 @@
     <!-- CHMURA -->
     <div class="card cloud-container" id="cloud-card">
         <h2>☁️ Baza Współdzielona</h2>
-        <p style="font-size: 13.5px; color: #555; margin-bottom: 20px;">Dzięki bazie współdzielonej wszyscy pracownicy mają zawsze aktualną listę samochodów, lokalizacji i uczestników. Pamiętaj, aby pobrać dane po otwarciu aplikacji, a wysłać, jeśli dodasz nowy element.</p>
+        <p style="font-size: 13.5px; color: #555; margin-bottom: 20px;">
+            System używa inteligentnego łączenia. Twoje dane i dane kolegów zostaną połączone, a nowości dopisane (nic nie zostanie nadpisane). 
+        </p>
         
         <div class="sync-info" id="syncStatusUI">
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
 
-        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">⬇️ POBIERZ AKTUALNĄ BAZĘ</button>
+        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud()">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
     </div>
 
@@ -240,7 +241,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v14';
+    const STORAGE_KEY = 'rckik_app_data_v15';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -264,6 +265,7 @@
             { name: "Konrad Zbrzezny", email: DEFAULT_MANAGER_EMAIL, hidden: true }
         ],
         history: [],
+        deletedIds: [],
         lastSync: 'Nigdy'
     };
 
@@ -278,6 +280,7 @@
                     vehicles: Array.isArray(saved.vehicles) && saved.vehicles.length > 0 ? saved.vehicles : [...defaultData.vehicles],
                     employees: Array.isArray(saved.employees) && saved.employees.length > 0 ? saved.employees : [...defaultData.employees],
                     history: Array.isArray(saved.history) ? saved.history : [],
+                    deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
                     lastSync: saved.lastSync || 'Nigdy'
                 };
             } else {
@@ -293,7 +296,6 @@
         renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
         setDefaultDates(); populateFilterDropdown(); calculateAllowancePreview();
         updateSyncDateUI();
-        initSwipeGestures();
     }
 
     function updateSyncDateUI() {
@@ -611,7 +613,9 @@ ${authorName}`;
     }
 
     function deleteHistoryItem(id) {
-        if (confirm('Czy na pewno chcesz usunąć ten pojedynczy raport z historii?')) {
+        if (confirm('Czy na pewno chcesz bezpowrotnie usunąć ten pojedynczy raport z historii?')) {
+            if (!appData.deletedIds) appData.deletedIds = [];
+            appData.deletedIds.push(id); // Zapamiętaj, że skasowano
             appData.history = appData.history.filter(item => item.id !== id);
             saveAppData();
             renderHistory();
@@ -619,7 +623,9 @@ ${authorName}`;
     }
 
     function clearHistory() { 
-        if (confirm('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników?')) { 
+        if (confirm('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników? (Zniknie dla każdego po zsynchronizowaniu!)')) { 
+            if (!appData.deletedIds) appData.deletedIds = [];
+            appData.history.forEach(i => appData.deletedIds.push(i.id));
             appData.history = []; saveAppData(); renderHistory(); 
         } 
     }
@@ -627,7 +633,13 @@ ${authorName}`;
     function clearFilteredHistory() {
         const filterEmp = document.getElementById('filterEmployee').value;
         if (!filterEmp) return;
-        if (confirm(`Czy usunąć bezpowrotnie WSZYSTKIE raporty powiązane z pracownikiem: ${filterEmp}?`)) {
+        if (confirm(`Czy usunąć bezpowrotnie WSZYSTKIE raporty powiązane z pracownikiem: ${filterEmp}? (Znikną dla każdego po zsynchronizowaniu!)`)) {
+            if (!appData.deletedIds) appData.deletedIds = [];
+            appData.history.forEach(i => {
+                if (i.author === filterEmp || i.coParticipants.includes(filterEmp)) {
+                    appData.deletedIds.push(i.id);
+                }
+            });
             appData.history = appData.history.filter(i => !(i.author === filterEmp || i.coParticipants.includes(filterEmp)));
             saveAppData();
             renderHistory();
@@ -642,22 +654,74 @@ ${authorName}`;
         }
     }
 
-    // --- LOGIKA CHMURY Z KLUCZAMI NA SZTYWNO ---
+    // --- SYSTEM INTELIGENTNEGO ŁĄCZENIA BAZ (MERGE) ---
+    function mergeWithCloudData(cloudRecord) {
+        if (!appData.deletedIds) appData.deletedIds = [];
+        
+        // 1. Złącz kosz (usunięte raporty z chmury i lokalnie)
+        const cloudDeleted = cloudRecord.deletedIds || [];
+        appData.deletedIds = Array.from(new Set([...appData.deletedIds, ...cloudDeleted]));
+
+        // 2. Połącz historie (nadpisuj duplikaty, filtruj skasowane)
+        const historyMap = new Map();
+        
+        // Dane z serwera wrzucamy pierwsze
+        (cloudRecord.history || []).forEach(item => {
+            if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
+        });
+        
+        // Nasze lokalne nadpiszą/dodadzą się na końcu
+        (appData.history || []).forEach(item => {
+            if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
+        });
+        
+        // Sortowanie malejąco po ID (najnowsze na górze)
+        appData.history = Array.from(historyMap.values()).sort((a,b) => b.id - a.id);
+
+        // 3. Bezpieczne łączenie słowników (nie kasuje lokalnych wpisów)
+        appData.locations = Array.from(new Set([...(cloudRecord.locations || []), ...(appData.locations || [])]));
+        appData.vehicles = Array.from(new Set([...(cloudRecord.vehicles || []), ...(appData.vehicles || [])]));
+        
+        const empMap = new Map();
+        (cloudRecord.employees || []).forEach(e => empMap.set(e.name, e));
+        (appData.employees || []).forEach(e => empMap.set(e.name, e)); 
+        appData.employees = Array.from(empMap.values());
+    }
+
     async function uploadToCloud() {
         const btn = document.getElementById('btnUploadCloud');
-        btn.textContent = "Wysyłanie...";
+        btn.textContent = "Łączenie i wysyłanie...";
+        
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+            // NAJPIERW pobierz z chmury i połącz (żeby nie nadpisać kolegów!)
+            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
+            });
+            
+            if (resGet.ok) {
+                const data = await resGet.json();
+                if(data.record) mergeWithCloudData(data.record);
+            }
+
+            // DOPIERO WTEDY wyślij połączoną bazę na serwer
+            const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': CLOUD_API_KEY },
                 body: JSON.stringify(appData)
             });
-            if (res.ok) {
+            
+            if (resPut.ok) {
                 appData.lastSync = new Date().toLocaleString();
-                saveAppData(); updateSyncDateUI();
-                alert("Super! Zmiany zostały wysłane do bazy. Inni użytkownicy mogą je teraz pobrać.");
-            } else { alert("Błąd zapisu do chmury."); }
-        } catch(e) { alert("Błąd połączenia z internetem."); }
+                saveAppData(); 
+                updateSyncDateUI();
+                initApp(); // odśwież widok
+                alert("Super! Twoje raporty zostały połączone z chmurą i wysłane (nic nie zostało skasowane).");
+            } else { 
+                alert("Błąd zapisu do chmury."); 
+            }
+        } catch(e) { 
+            alert("Błąd połączenia z internetem."); 
+        }
         btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
 
@@ -670,65 +734,17 @@ ${authorName}`;
             });
             if (res.ok) {
                 const data = await res.json();
-                if(data.record && data.record.employees) {
-                    appData = data.record;
+                if(data.record) {
+                    // Połącz pobrane z chmury z naszymi lokalnymi
+                    mergeWithCloudData(data.record);
+                    
                     appData.lastSync = new Date().toLocaleString();
                     saveAppData(); initApp();
-                    alert("Sukces! Baza została zaktualizowana do najnowszej wersji z chmury.");
+                    alert("Sukces! Baza pobrana i inteligentnie połączona. Twoje nienysłane raporty są bezpieczne.");
                 }
             } else { alert("Błąd pobierania. Sprawdź czy klucze API w kodzie są poprawne."); }
         } catch(e) { alert("Błąd połączenia z internetem."); }
-        btn.textContent = "⬇️ POBIERZ AKTUALNĄ BAZĘ";
-    }
-
-    // --- OBSŁUGA GESTÓW (SWIPE) DO PRZEŁĄCZANIA ZAKŁADEK ---
-    function initSwipeGestures() {
-        let touchstartX = 0;
-        let touchendX = 0;
-        let touchstartY = 0;
-        let touchendY = 0;
-
-        const mainContainer = document.getElementById('mainContainer');
-
-        mainContainer.addEventListener('touchstart', e => {
-            // Ignorowanie gestów podczas interakcji z polami tekstowymi lub selektorami
-            if(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
-            touchstartX = e.changedTouches[0].screenX;
-            touchstartY = e.changedTouches[0].screenY;
-        }, {passive: true});
-
-        mainContainer.addEventListener('touchend', e => {
-            if(['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(e.target.tagName)) return;
-            touchendX = e.changedTouches[0].screenX;
-            touchendY = e.changedTouches[0].screenY;
-            handleSwipe();
-        }, {passive: true});
-
-        function handleSwipe() {
-            const swipeThreshold = 60; // minimalna długość przesunięcia w poziomie
-            const verticalThreshold = 60; // maksymalna dopuszczalna długość przesunięcia w pionie (zapobiega zmianie przy przewijaniu góra-dół)
-            
-            if (Math.abs(touchstartX - touchendX) < swipeThreshold) return;
-            if (Math.abs(touchstartY - touchendY) > verticalThreshold) return;
-
-            const tabs = ['form', 'history', 'cloud'];
-            let currentTab = 'form';
-            if (document.getElementById('tabHistoryBtn').classList.contains('active')) currentTab = 'history';
-            if (document.getElementById('tabCloudBtn').classList.contains('active')) currentTab = 'cloud';
-            
-            // Nie przełączaj zakładek, gdy użytkownik jest na ekranie wygenerowanego protokołu (wyników)
-            if (document.getElementById('results-card').style.display === 'block') return;
-
-            let currentIndex = tabs.indexOf(currentTab);
-            if (currentIndex === -1) return;
-
-            if (touchendX < touchstartX) { // Swipe w lewo (następna zakładka)
-                if (currentIndex < tabs.length - 1) switchTab(tabs[currentIndex + 1]);
-            }
-            if (touchendX > touchstartX) { // Swipe w prawo (poprzednia zakładka)
-                if (currentIndex > 0) switchTab(tabs[currentIndex - 1]);
-            }
-        }
+        btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
     }
 
     window.onload = initApp;
