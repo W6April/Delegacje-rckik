@@ -56,6 +56,9 @@
         button.secondary:hover { background-color: #616a6b; }
         button.cloud-btn { background-color: #2980b9; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; border-radius: 8px;}
         button.cloud-btn:hover { background-color: #2471a3; }
+        
+        .btn-icon-delete { background: transparent; color: #e74c3c; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-delete:hover { transform: scale(1.1); }
 
         .participants-container { display: flex; flex-direction: column; gap: 10px; background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; }
         .participant-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px; }
@@ -69,11 +72,10 @@
         .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px; }
         .badge { background: #e1f5fe; color: #0288d1; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; margin-top: 4px;}
 
-        /* Zaktualizowana Tabela Historii (Kompaktowa) */
         .table-responsive { width: 100%; overflow-x: auto; }
-        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-        .history-table th, .history-table td { border-bottom: 1px solid var(--border-color); padding: 10px 8px; text-align: left; vertical-align: middle; }
-        .history-table th { background-color: #f1f2f6; border-top: 1px solid var(--border-color); }
+        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; min-width: 650px; }
+        .history-table th, .history-table td { border: 1px solid var(--border-color); padding: 8px 10px; text-align: left; vertical-align: middle; }
+        .history-table th { background-color: #f1f2f6; }
         .history-row { cursor: pointer; transition: background-color 0.2s; }
         .history-row:hover { background-color: #f8f9fa; }
         .details-row { display: none; background-color: #fafafa; }
@@ -261,7 +263,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v21'; // Podbita wersja by zainicjować nowe zmienne
+    const STORAGE_KEY = 'rckik_app_data_v23'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -703,9 +705,48 @@ ${item.author}`;
         item.updatedAt = Date.now();
         saveAppData();
         
-        // Odświeżenie interfejsu historii i uruchomienie chmury/animacji
         renderHistory();
         syncAfterEmail(null); 
+    }
+
+    // --- KOPIUJ I WYŚLIJ JAKO ---
+    function copyToForm(id) {
+        const item = appData.history.find(i => i.id === id);
+        if (!item) return;
+        
+        // 1. Zlokalizuj wartości w formularzu
+        const locSelect = document.getElementById('locationSelect');
+        if ([...locSelect.options].some(o => o.value === item.location)) locSelect.value = item.location;
+        
+        const vehSelect = document.getElementById('vehicleSelect');
+        if ([...vehSelect.options].some(o => o.value === item.vehicle)) vehSelect.value = item.vehicle;
+
+        document.getElementById('departureTime').value = item.departure.replace(' ', 'T');
+        document.getElementById('returnTime').value = item.return.replace(' ', 'T');
+        
+        document.getElementById('delegationPurpose').value = (item.purpose && item.purpose !== 'Brak' && item.purpose !== 'Nie podano') ? item.purpose : '';
+        document.getElementById('workDescription').value = (item.workDescription && item.workDescription !== 'Brak' && item.workDescription !== 'Nie podano') ? item.workDescription : '';
+        
+        // 2. Przygotuj uczestników (wszystkich jako towarzyszy, żeby wymusić wybór autora)
+        let allPeople = [];
+        if (item.author) allPeople.push(item.author);
+        if (item.coParticipants && item.coParticipants !== 'brak' && item.coParticipants !== 'Nie podano') {
+            allPeople = allPeople.concat(item.coParticipants.split(', '));
+        }
+        
+        document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
+        
+        document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
+            cb.checked = allPeople.includes(cb.value);
+            cb.disabled = false;
+            cb.parentElement.style.opacity = '1';
+        });
+        
+        // 3. Przełącz na widok formularza
+        switchTab('form');
+        calculateAllowancePreview();
+        
+        alert('✅ Skopiowano dane wyjazdu do formularza.\n\nWybierz swoje imię w polu "Wypełnia", sprawdź daty i wygeneruj swój protokół.');
     }
 
     function switchTab(tab) {
@@ -732,11 +773,13 @@ ${item.author}`;
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- ROZWIJANIE SZCZEGÓŁÓW HISTORII ---
+    // --- ROZWIJANIE SZCZEGÓŁÓW HISTORII (NAPRAWIONE NA 1 KLIK) ---
     function toggleDetails(id) {
         const row = document.getElementById('details-' + id);
         const icon = document.getElementById('icon-' + id);
-        if(row.style.display === 'none') {
+        
+        // Sprawdza, czy wiersz jest domyślnie pusty, lub ukryty
+        if(row.style.display === 'none' || row.style.display === '') {
             row.style.display = 'table-row';
             icon.textContent = '▲';
         } else {
@@ -763,7 +806,7 @@ ${item.author}`;
         let html = `<table class="history-table">
             <thead>
                 <tr>
-                    <th>Data</th>
+                    <th>Data wyjazdu</th>
                     <th>Zgłasza</th>
                     <th>Lokalizacja</th>
                     <th style="width: 40px; text-align: center;"></th>
@@ -771,14 +814,13 @@ ${item.author}`;
             </thead>`;
 
         hist.forEach(i => {
-            const isSentIcon = i.isSent ? '✅' : '⏳';
-            const shortDate = i.dateCreated.split(',')[0];
+            const shortDate = i.departure.split(' ')[0]; 
             const workDesc = i.workDescription || i.purpose || 'Brak';
             
             html += `
             <tbody>
                 <tr class="history-row" onclick="toggleDetails(${i.id})">
-                    <td style="white-space: nowrap;">${shortDate} <small title="Status wysłania e-maila">${isSentIcon}</small></td>
+                    <td style="white-space: nowrap;">${shortDate}</td>
                     <td><b>${i.author}</b></td>
                     <td>${i.location}</td>
                     <td style="text-align: center; color: var(--primary-color); font-size: 10px;" id="icon-${i.id}">▼</td>
@@ -803,10 +845,14 @@ ${item.author}`;
                                     Rozliczono
                                 </label>
                                 
+                                <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
+                                    📝 Kopiuj i wyślij jako...
+                                </button>
+                                
                                 ${!i.isSent ? `
-                                    <button type="button" onclick="sendEmailFromHistory(${i.id})" style="background: #2980b9; padding: 6px 12px; font-size: 12px;">✉️ Wyślij e-mail</button>
+                                    <button type="button" onclick="sendEmailFromHistory(${i.id})" style="background: #2980b9; padding: 6px 12px; font-size: 12px; color: #fff; border:none; border-radius:4px;">✉️ Wyślij e-mail</button>
                                 ` : `
-                                    <span style="color: #27ae60; font-weight: bold; font-size: 12px;">✅ E-mail wysłany</span>
+                                    <span style="color: #27ae60; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; height: 28px;">✅ Wysłano</span>
                                 `}
                                 
                                 <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
@@ -826,7 +872,7 @@ ${item.author}`;
             item.settled = isChecked;
             item.updatedAt = Date.now(); 
             saveAppData();
-            renderHistory(); // odświeża kolor napisu "Rozliczono"
+            renderHistory(); 
             
             if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę od razu do chmury?')) {
                 uploadToCloud();
@@ -945,7 +991,6 @@ ${item.author}`;
                 renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown();
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 
-                if(btn && btn.id === 'btnUploadCloud') alert("Baza została pomyślnie zaktualizowana w chmurze.");
             } else { 
                 if(btn && btn.id === 'btnUploadCloud') alert("Błąd zapisu do chmury."); 
             }
