@@ -39,7 +39,7 @@
 
         .form-group { margin-bottom: 15px; width: 100%; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; }
-        input[type="text"], input[type="datetime-local"], select, textarea {
+        input[type="text"], input[type="datetime-local"], input[type="number"], input[type="month"], select, textarea {
             width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; max-width: 100%;
         }
         textarea { resize: vertical; height: 90px; }
@@ -64,7 +64,7 @@
         .participant-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; background: #fff; padding: 10px; border: 1px solid #e1e1e1; border-radius: 4px; gap: 15px; }
 
         .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; }
-        .results-container, .history-container, .cloud-container { display: none; }
+        .results-container, .history-container, .cloud-container, .stats-container { display: none; }
 
         .email-preview { background: #fff; border: 1px solid var(--border-color); border-left: 5px solid var(--primary-color); padding: 18px; margin-bottom: 15px; border-radius: 4px; }
         .email-header { font-weight: bold; color: #2c3e50; margin-bottom: 12px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
@@ -81,8 +81,8 @@
         .details-row { display: none; background-color: #fafafa; }
         .details-content { padding: 12px; font-size: 13px; line-height: 1.6; border-left: 3px solid var(--primary-color); }
 
-        .nav-tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .nav-tabs button { flex: 1; background: #e4e7eb; color: #333; padding: 10px 5px; font-size: 13px; min-width: 100px;}
+        .nav-tabs { display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap; }
+        .nav-tabs button { flex: 1; background: #e4e7eb; color: #333; padding: 10px 5px; font-size: 13px; min-width: 80px;}
         .nav-tabs button.active { background: var(--primary-color); color: white; }
 
         .app-footer { text-align: center; margin-top: 25px; font-size: 12px; color: #888; border-top: 1px dashed #ccc; padding-top: 15px; }
@@ -124,7 +124,8 @@
 
     <div class="nav-tabs">
         <button type="button" id="tabFormBtn" class="active" onclick="switchTab('form')">Nowa Delegacja</button>
-        <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia Delegacji</button>
+        <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia</button>
+        <button type="button" id="tabStatsBtn" onclick="switchTab('stats')">📊 Statystyki</button>
         <button type="button" id="tabCloudBtn" onclick="switchTab('cloud')">☁️ Chmura</button>
     </div>
 
@@ -154,10 +155,8 @@
             <label>Uczestnicy delegacji:</label>
             <p style="font-size: 12px; color: #666; margin-top: 0;">1. Zaznacz <b>kto wypełnia</b> protokół. 2. Zaznacz <b>z kim był</b>.</p>
             
-            <!-- Widoczni pracownicy -->
             <div class="participants-container" id="mainParticipantsList"></div>
             
-            <!-- Ukryci pracownicy (drzewko) -->
             <details style="margin-top: 12px; margin-bottom: 12px; padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 4px;">
                 <summary style="cursor: pointer; font-size: 13px; font-weight: bold; color: #555;">Pokaż pozostałych (ukrytych) pracowników</summary>
                 <div id="hiddenParticipantsList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;"></div>
@@ -229,6 +228,26 @@
         </div>
     </div>
 
+    <!-- STATYSTYKI -->
+    <div class="card stats-container" id="stats-card">
+        <h2>📊 Podsumowanie i Statystyki</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                <label for="statsMonth">Wybierz miesiąc:</label>
+                <input type="month" id="statsMonth" onchange="renderStats()">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                <label for="statsEmployee">Wybierz pracownika:</label>
+                <select id="statsEmployee" onchange="renderStats()">
+                    <option value="">Wszyscy pracownicy (podsumowanie)</option>
+                </select>
+            </div>
+        </div>
+        <div id="statsResults">
+            <!-- Tutaj zostaną wygenerowane statystyki -->
+        </div>
+    </div>
+
     <!-- CHMURA -->
     <div class="card cloud-container" id="cloud-card">
         <h2>☁️ Baza Współdzielona</h2>
@@ -258,7 +277,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v26'; 
+    const STORAGE_KEY = 'rckik_app_data_v28'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -318,6 +337,11 @@
         
         populateFilterDropdown(); calculateAllowancePreview();
         updateSyncDateUI();
+        
+        const now = new Date();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        document.getElementById('statsMonth').value = `${yyyy}-${mm}`;
     }
 
     function updateSyncDateUI() {
@@ -344,7 +368,7 @@
         appData.vehicles.forEach(veh => { 
             const opt = document.createElement('option'); 
             opt.value = veh; 
-            opt.textContent = veh; // Usunięto emotikony z aut
+            opt.textContent = veh; 
             select.appendChild(opt); 
         });
     }
@@ -408,13 +432,26 @@
     }
 
     function populateFilterDropdown() {
-        const sel = document.getElementById('filterEmployee'); if (!sel) return;
-        const currentVal = sel.value; 
-        sel.innerHTML = '<option value="">Wszyscy pracownicy</option>';
-        appData.employees.forEach(emp => {
-            const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name; sel.appendChild(opt);
-        });
-        sel.value = currentVal; 
+        const sel = document.getElementById('filterEmployee');
+        const selStats = document.getElementById('statsEmployee');
+        
+        if (sel) {
+            const currentVal = sel.value; 
+            sel.innerHTML = '<option value="">Wszyscy pracownicy</option>';
+            appData.employees.forEach(emp => {
+                const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name; sel.appendChild(opt);
+            });
+            sel.value = currentVal; 
+        }
+        
+        if (selStats) {
+            const currentStatsVal = selStats.value;
+            selStats.innerHTML = '<option value="">Wszyscy pracownicy (podsumowanie zbiorcze)</option>';
+            appData.employees.forEach(emp => {
+                const opt = document.createElement('option'); opt.value = emp.name; opt.textContent = emp.name; selStats.appendChild(opt);
+            });
+            selStats.value = currentStatsVal;
+        }
     }
 
     function addLocation() {
@@ -477,6 +514,14 @@
         } else {
             return `${hours} godz. ${mins} min.`;
         }
+    }
+
+    function getDurationInHours(depStr, retStr) {
+        const start = new Date(depStr.replace(' ', 'T'));
+        const end = new Date(retStr.replace(' ', 'T'));
+        const diffMs = end - start;
+        if (diffMs <= 0 || isNaN(diffMs)) return 0;
+        return diffMs / (1000 * 60 * 60);
     }
 
     function calculateAllowancePreview() {
@@ -644,7 +689,8 @@ ${authorName}`;
 
         const durationStr = calculateDurationString(item.departure, item.return);
         const emailSubject = `${item.location} - ${item.author}`;
-        const emailBody = `Szanowny Panie Kierowniku,
+        
+        let emailBody = `Szanowny Panie Kierowniku,
 
 Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 
@@ -731,11 +777,16 @@ ${item.author}`;
     }
 
     function switchTab(tab) {
-        document.getElementById('form-card').style.display = 'none'; document.getElementById('results-card').style.display = 'none';
-        document.getElementById('history-card').style.display = 'none'; document.getElementById('cloud-card').style.display = 'none';
+        document.getElementById('form-card').style.display = 'none'; 
+        document.getElementById('results-card').style.display = 'none';
+        document.getElementById('history-card').style.display = 'none'; 
+        document.getElementById('cloud-card').style.display = 'none';
+        document.getElementById('stats-card').style.display = 'none';
         
-        document.getElementById('tabFormBtn').classList.remove('active'); document.getElementById('tabHistoryBtn').classList.remove('active');
+        document.getElementById('tabFormBtn').classList.remove('active'); 
+        document.getElementById('tabHistoryBtn').classList.remove('active');
         document.getElementById('tabCloudBtn').classList.remove('active');
+        document.getElementById('tabStatsBtn').classList.remove('active');
 
         if (tab === 'form') { 
             document.getElementById('form-card').style.display = 'block'; 
@@ -750,6 +801,10 @@ ${item.author}`;
             document.getElementById('tabCloudBtn').classList.add('active'); 
         } else if (tab === 'results') { 
             document.getElementById('results-card').style.display = 'block'; 
+        } else if (tab === 'stats') {
+            document.getElementById('stats-card').style.display = 'block';
+            document.getElementById('tabStatsBtn').classList.add('active');
+            renderStats();
         }
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -774,7 +829,6 @@ ${item.author}`;
         
         let hist = appData.history;
         if (filterEmp) {
-            // Filtrujemy TYLKO po autorze protokołu
             hist = hist.filter(i => i.author === filterEmp);
             btnDeleteFiltered.style.display = 'inline-block';
         } else {
@@ -821,6 +875,8 @@ ${item.author}`;
                             <b>Pojazd:</b> ${i.vehicle}<br>
                             <b>Termin:</b> ${i.departure} - ${i.return}<br>
                             <b>Dieta:</b> <span class="badge">${i.allowance}</span><br>
+                            
+                            <hr style="border: 0; border-top: 1px dashed #e1e1e1; margin: 8px 0;">
                             <b>Cel:</b> ${i.purpose}<br>
                             <b>Opis pracy:</b> ${workDesc}<br>
                             <b>Załącznik:</b> ${i.attachment}<br>
@@ -849,6 +905,114 @@ ${item.author}`;
         });
         html += `</table>`;
         container.innerHTML = html;
+    }
+
+    // --- RENDEROWANIE STATYSTYK ---
+    function renderStats() {
+        const container = document.getElementById('statsResults'); 
+        const monthVal = document.getElementById('statsMonth').value; // Format: YYYY-MM
+        const empVal = document.getElementById('statsEmployee').value;
+        
+        if (!monthVal) {
+            container.innerHTML = '<p style="color: #666;">Proszę wybrać miesiąc z kalendarza.</p>';
+            return;
+        }
+
+        const hist = appData.history.filter(i => i.departure.startsWith(monthVal));
+        
+        if (hist.length === 0) {
+            container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak zarejestrowanych delegacji w wybranym miesiącu.</p>';
+            return;
+        }
+
+        if (empVal) {
+            // Statystyki dla konkretnego pracownika
+            const empHist = hist.filter(i => i.author === empVal);
+            if(empHist.length === 0) {
+                container.innerHTML = `<p style="color: #666; font-size: 14px;">Brak delegacji dla pracownika <b>${empVal}</b> w tym miesiącu.</p>`;
+                return;
+            }
+            
+            let totalAllowance = 0;
+            let totalHours = 0;
+            let locCounts = {};
+
+            empHist.forEach(i => {
+                totalAllowance += parseFloat(i.allowance) || 0;
+                totalHours += getDurationInHours(i.departure, i.return);
+                locCounts[i.location] = (locCounts[i.location] || 0) + 1;
+            });
+            
+            // Najczęstszy kierunek
+            let topLoc = Object.keys(locCounts).sort((a,b) => locCounts[b] - locCounts[a])[0] || 'Brak';
+
+            container.innerHTML = `
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                    <div style="flex:1; min-width: 150px; background:#e1f5fe; border:1px solid #81d4fa; padding:15px; border-radius:8px; text-align:center;">
+                        <div style="font-size:12px; color:#0277bd; text-transform:uppercase; font-weight:bold;">Suma Diet</div>
+                        <div style="font-size:24px; font-weight:bold; color:#01579b; margin-top:5px;">${totalAllowance.toFixed(2)} zł</div>
+                    </div>
+                    <div style="flex:1; min-width: 130px; background:#f3e5f5; border:1px solid #ce93d8; padding:15px; border-radius:8px; text-align:center;">
+                        <div style="font-size:12px; color:#6a1b9a; text-transform:uppercase; font-weight:bold;">Czas delegacji</div>
+                        <div style="font-size:20px; font-weight:bold; color:#4a148c; margin-top:5px;">${totalHours.toFixed(1)} h</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-size: 14px; text-align: center; color: #555; background: #fff; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+                    Zarejestrowane wyjazdy: <b>${empHist.length}</b><br>
+                    Najczęstszy kierunek: <b>${topLoc}</b>
+                </div>
+            `;
+        } else {
+            // Zbiorcze zestawienie dla całego zespołu
+            const stats = {};
+            let globalTotal = 0;
+            let totalTrips = 0;
+            let vehCounts = {};
+            
+            hist.forEach(i => {
+                if(!stats[i.author]) stats[i.author] = { trips: 0, allowance: 0 };
+                stats[i.author].trips++;
+                
+                const allow = parseFloat(i.allowance) || 0;
+                stats[i.author].allowance += allow;
+                globalTotal += allow;
+                totalTrips++;
+                
+                vehCounts[i.vehicle] = (vehCounts[i.vehicle] || 0) + 1;
+            });
+            
+            let topVeh = Object.keys(vehCounts).sort((a,b) => vehCounts[b] - vehCounts[a])[0] || 'Brak';
+
+            let tableHtml = `
+                <div style="margin: 15px 0; padding: 15px; background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 12px; color: #e65100; text-transform: uppercase; font-weight:bold;">Suma diet dla całego zespołu</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #e65100; margin-top: 5px;">${globalTotal.toFixed(2)} zł</div>
+                    <div style="font-size: 13px; color: #d84315; margin-top: 8px;">
+                        Łączna liczba wyjazdów: <b>${totalTrips}</b><br>
+                        Top pojazd floty: <b>${topVeh}</b>
+                    </div>
+                </div>
+                <table class="history-table" style="margin-top: 0; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Pracownik</th>
+                        <th style="text-align:center;">Wyjazdy</th>
+                        <th>Suma Diet</th>
+                    </tr>
+                </thead><tbody>`;
+            
+            for(let emp in stats) {
+                tableHtml += `<tr>
+                    <td><b>${emp}</b></td>
+                    <td style="text-align:center; font-size:14px;">${stats[emp].trips}</td>
+                    <td>
+                        <b style="color:var(--primary-color);">${stats[emp].allowance.toFixed(2)} zł</b>
+                    </td>
+                </tr>`;
+            }
+            tableHtml += `</tbody></table>`;
+            container.innerHTML = tableHtml;
+        }
     }
 
     function toggleSettled(id, isChecked) {
@@ -1000,6 +1164,7 @@ ${item.author}`;
                     
                     renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); updateSyncDateUI();
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                    if (document.getElementById('stats-card').style.display === 'block') renderStats();
                     
                     if (!silent) alert("Sukces! Baza pobrana i inteligentnie połączona.");
                 }
