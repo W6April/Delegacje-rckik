@@ -243,7 +243,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v17';
+    const STORAGE_KEY = 'rckik_app_data_v18';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const defaultData = {
@@ -297,7 +297,6 @@
     function initApp() {
         renderLocations(); renderVehicles(); renderEmployees(); renderManageEmployeesList();
         
-        // Ustawia domyślne daty tylko przy PIERWSZYM uruchomieniu
         if (!document.getElementById('departureTime').value) {
             setDefaultDates(); 
         }
@@ -571,7 +570,6 @@ ${authorName}`;
     }
     
     function syncAfterEmail() {
-        // Opóźnia uruchomienie wysyłania do chmury, aby najpierw odpalił się klient mailowy
         setTimeout(() => {
             uploadToCloud();
         }, 800);
@@ -639,13 +637,17 @@ ${authorName}`;
         if (item) {
             item.settled = isChecked;
             saveAppData();
+            
+            if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę do chmury, aby inni też widzieli ten status?')) {
+                uploadToCloud();
+            }
         }
     }
 
     function deleteHistoryItem(id) {
         if (confirm('Czy na pewno chcesz bezpowrotnie usunąć ten pojedynczy raport z historii?')) {
             if (!appData.deletedIds) appData.deletedIds = [];
-            appData.deletedIds.push(id); // Zapamiętaj, że skasowano
+            appData.deletedIds.push(id); 
             appData.history = appData.history.filter(item => item.id !== id);
             saveAppData();
             renderHistory();
@@ -678,7 +680,6 @@ ${authorName}`;
     
     function resetForm() { 
         switchTab('form'); 
-        // Brak usuwania wpisanych danych (pamięć edycji zachowana)
         calculateAllowancePreview(); 
     }
     
@@ -693,19 +694,15 @@ ${authorName}`;
     function mergeWithCloudData(cloudRecord) {
         if (!appData.deletedIds) appData.deletedIds = [];
         
-        // 1. Złącz kosz (usunięte raporty z chmury i lokalnie)
         const cloudDeleted = cloudRecord.deletedIds || [];
         appData.deletedIds = Array.from(new Set([...appData.deletedIds, ...cloudDeleted]));
 
-        // 2. Połącz historie (nadpisuj duplikaty, filtruj skasowane)
         const historyMap = new Map();
         
-        // Dane z serwera wrzucamy pierwsze
         (cloudRecord.history || []).forEach(item => {
             if (!appData.deletedIds.includes(item.id)) historyMap.set(item.id, item);
         });
         
-        // Nasze lokalne aktualizują chmurę (w tym status rozliczenia)
         (appData.history || []).forEach(item => {
             if (!appData.deletedIds.includes(item.id)) {
                 const existing = historyMap.get(item.id);
@@ -716,10 +713,8 @@ ${authorName}`;
             }
         });
         
-        // Sortowanie malejąco po ID (najnowsze na górze)
         appData.history = Array.from(historyMap.values()).sort((a,b) => b.id - a.id);
 
-        // 3. Bezpieczne łączenie słowników (nie kasuje lokalnych wpisów)
         appData.locations = Array.from(new Set([...(cloudRecord.locations || []), ...(appData.locations || [])]));
         appData.vehicles = Array.from(new Set([...(cloudRecord.vehicles || []), ...(appData.vehicles || [])]));
         
@@ -734,7 +729,6 @@ ${authorName}`;
         if(btn) btn.textContent = "Łączenie i wysyłanie...";
         
         try {
-            // NAJPIERW pobierz z chmury i połącz (żeby nie nadpisać kolegów!)
             const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 headers: { 'X-Master-Key': CLOUD_API_KEY }
             });
@@ -744,7 +738,6 @@ ${authorName}`;
                 if(data.record) mergeWithCloudData(data.record);
             }
 
-            // DOPIERO WTEDY wyślij połączoną bazę na serwer
             const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': CLOUD_API_KEY },
@@ -756,11 +749,9 @@ ${authorName}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 
-                // Ciche odświeżenie bez wymuszania całego initApp by nie gubić danych formularza
                 renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown();
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 
-                // Informujemy tylko jeśli wywołano to ręcznie guzikiem z zakładki Chmura
                 if(btn) alert("Super! Baza i nowe raporty zostały wysłane do chmury (nic nie zostało skasowane).");
             } else { 
                 if(btn) alert("Błąd zapisu do chmury."); 
@@ -785,7 +776,6 @@ ${authorName}`;
                     appData.lastSync = new Date().toLocaleString();
                     saveAppData(); 
                     
-                    // Bezpieczne odświeżenie widoków (nie psuje formularza gdy pobiera w tle)
                     renderLocations(); renderVehicles(); renderManageEmployeesList(); populateFilterDropdown(); updateSyncDateUI();
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
                     
@@ -802,7 +792,7 @@ ${authorName}`;
 
     window.onload = () => {
         initApp();
-        downloadFromCloud(true); // Pobiera z chmury po cichu w tle podczas uruchamiania
+        downloadFromCloud(true); 
     };
 </script>
 
