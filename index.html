@@ -127,14 +127,31 @@
             font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000;
             width: 90%; max-width: 400px; text-align: center; line-height: 1.4;
         }
+        
+        /* Modal dla Admina */
+        .admin-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; }
+        .admin-modal-content { background:#fff; padding:20px; border-radius:8px; width:90%; max-width:500px; max-height:85vh; overflow-y:auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
 <div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
 
+<!-- Modal Bazy Odległości Admina -->
+<div class="admin-modal" id="adminDistModal">
+    <div class="admin-modal-content">
+        <h3 style="color:#8e44ad; margin-top:0; font-size: 16px; font-weight: 900; margin-bottom: 5px;">🛠 Baza Odległości (Admin)</h3>
+        <p style="font-size:12px; color:#666; margin-bottom: 15px;">Zarządzaj zapisanymi kilometrami. System używa ich do liczenia statystyk.</p>
+        
+        <button onclick="recalculateZeros()" style="background:#f39c12; padding:10px; font-size:13px; width:100%; margin-bottom:15px; border-radius: 6px;">🔄 Uzupełnij brakujące dystanse w Historii</button>
+        
+        <div id="adminDistList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
+        
+        <button onclick="document.getElementById('adminDistModal').style.display='none'" style="width:100%; background:#7f8c8d; padding: 12px; border-radius: 6px;">Zamknij panel</button>
+    </div>
+</div>
+
 <div class="container" id="mainContainer">
-    <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
     <header onclick="handleAdminClick()">
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
@@ -254,7 +271,8 @@
                     <option value="">Wszyscy pracownicy</option>
                 </select>
             </div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" id="btnAdminPanel" class="secondary" style="display: none; background-color: #8e44ad; font-size: 12px; padding: 5px 10px;" onclick="openAdminPanel()">🛠 Baza Odległości</button>
                 <button type="button" id="btnDeleteFiltered" class="secondary" style="display: none; background-color: #e67e22; font-size: 12px; padding: 5px 10px;" onclick="clearFilteredHistory()">Usuń wyfiltrowane</button>
                 <button type="button" class="secondary" onclick="clearHistory()" style="font-size: 12px; padding: 5px 10px;">Wyczyść wszystko</button>
             </div>
@@ -296,10 +314,6 @@
 
         <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
-        
-        <div class="app-footer">
-            <span onclick="restoreBackup()" style="color: #bdc3c7; font-size: 11px; cursor: pointer; text-decoration: underline;">Przywróć stan bazy (z przed pobrania)</span>
-        </div>
     </div>
 </div>
 
@@ -311,8 +325,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v48'; // NOWY KLUCZ WERSJI
-    const BACKUP_KEY = 'rckik_app_backup';
+    const STORAGE_KEY = 'rckik_app_data_v49'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     // Baza dystansów w kilometrach (W OBIE STRONY)
@@ -350,7 +363,8 @@
             const pin = prompt("Podaj kod administratora:");
             if(pin === "9508") {
                 isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.\nW Historii pojawiła się opcja ukrytej edycji protokołów.");
+                alert("🔓 Tryb Administratora odblokowany.\nW Historii pojawiła się opcja ukrytej edycji protokołów oraz Baza Odległości.");
+                document.getElementById('btnAdminPanel').style.display = 'inline-block';
                 if (document.getElementById('history-card').style.display === 'block') {
                     renderHistory();
                 }
@@ -358,17 +372,6 @@
                 alert("Nieprawidłowy kod.");
             }
         }
-    }
-
-    function getDistance(locName) {
-        if (!locName || typeof locName !== 'string') return 0;
-        const locs = locName.split(', ');
-        let total = 0;
-        locs.forEach(l => {
-            const normalized = l.trim().toLowerCase();
-            total += locationDistances[normalized] || 0;
-        });
-        return total;
     }
 
     function sortLocations(locs) {
@@ -441,26 +444,6 @@
                     lastSync: saved.lastSync || 'Nigdy'
                 };
                 
-                // Agresywna naprawa dystansów dla starych protokołów, nawet jak zapisało się w nich 0
-                appData.history.forEach(item => {
-                    let d = parseFloat(item.distance);
-                    if(isNaN(d) || d <= 0) {
-                        const locs = String(item.location || '').split(', ');
-                        const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
-                        
-                        if(appData.distances[routeKey] !== undefined) {
-                            item.distance = appData.distances[routeKey];
-                        } else {
-                            let maxDist = 0;
-                            locs.forEach(l => {
-                                let distForLoc = appData.distances[l.trim().toLowerCase()] || 0;
-                                if(distForLoc > maxDist) maxDist = distForLoc;
-                            });
-                            item.distance = maxDist;
-                        }
-                    }
-                });
-                
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
                 
             } else {
@@ -472,29 +455,6 @@
     loadData();
 
     function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
-
-    function createBackup() {
-        if(appData && appData.locations) {
-            localStorage.setItem(BACKUP_KEY, JSON.stringify(appData));
-        }
-    }
-
-    function restoreBackup() {
-        const pin = prompt("Podaj kod PIN, aby przywrócić poprzedni stan bazy (sprzed ostatniej synchronizacji):");
-        if (pin === "9508") {
-            const backupStr = localStorage.getItem(BACKUP_KEY);
-            if (backupStr) {
-                localStorage.setItem(STORAGE_KEY, backupStr);
-                loadData();
-                initApp();
-                alert("Przywrócono poprzedni stan danych pomyślnie!");
-            } else {
-                alert("Brak kopii zapasowej do przywrócenia.");
-            }
-        } else if (pin !== null) {
-            alert("Nieprawidłowy kod PIN.");
-        }
-    }
 
     function initApp() {
         renderLocations(); renderVehicles(); renderEmployees(); 
@@ -751,6 +711,7 @@
         saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
     }
 
+    // Nowa logika: Dokładnie od 12h przysługuje pełna dieta 100%. Mniej niż 12 to 50%.
     function calculateAllowance(depStr, retStr) {
         if (!depStr || !retStr) return 0;
         const totalHours = getDurationInHours(depStr, retStr);
@@ -759,7 +720,7 @@
         
         if (totalHours < 24) {
             if (totalHours < 8) return 0;
-            if (totalHours <= 12) return dailyRate * 0.5;
+            if (totalHours < 12) return dailyRate * 0.5;
             return dailyRate;
         } else {
             let allowance = Math.floor(totalHours / 24) * dailyRate;
@@ -774,8 +735,8 @@
 
     function calculateDurationString(depStr, retStr) {
         if (!depStr || !retStr) return 'Brak danych';
-        const start = new Date(depStr.replace(' ', 'T'));
-        const end = new Date(retStr.replace(' ', 'T'));
+        const start = new Date(String(depStr).replace(' ', 'T'));
+        const end = new Date(String(retStr).replace(' ', 'T'));
         const diffMs = end - start;
         if (diffMs <= 0 || isNaN(diffMs)) return '0 godz. 0 min.';
         
@@ -893,7 +854,6 @@
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
         
-        // KOSZTY PRYWATNE
         let myCosts = 0;
         let myCostsDesc = '';
         const empIndex = appData.employees.findIndex(e => e.name === authorName);
@@ -914,6 +874,12 @@
         if (adminEditingId) {
             let item = appData.history.find(i => i.id === adminEditingId);
             if (item) {
+                // Jeśli nie zmieniono miasta, to system KONSREWUJE (zachowuje) stary, ręczny dystans.
+                let finalDistanceToSave = totalTripDistance;
+                if (item.location === locationStr && item.distance !== undefined && item.distance !== 0) {
+                    finalDistanceToSave = item.distance;
+                }
+                
                 item.location = locationStr;
                 item.vehicle = vehicle;
                 item.departure = formattedDeparture;
@@ -925,7 +891,7 @@
                 item.allowance = allowanceAmount.toFixed(2) + ' zł';
                 item.privateCosts = myCosts;
                 item.privateCostsDesc = myCostsDesc;
-                item.distance = totalTripDistance;
+                item.distance = finalDistanceToSave;
                 item.updatedAt = Date.now();
                 
                 saveAppData();
@@ -1066,6 +1032,70 @@ ${authorName}`;
                 }
             }
         }
+    }
+
+    function openAdminPanel() {
+        document.getElementById('adminDistModal').style.display = 'flex';
+        renderAdminDistList();
+    }
+
+    function renderAdminDistList() {
+        const container = document.getElementById('adminDistList');
+        container.innerHTML = '';
+        
+        const sortedKeys = Object.keys(appData.distances).sort((a,b) => a.localeCompare(b));
+        sortedKeys.forEach(k => {
+            const val = appData.distances[k];
+            const div = document.createElement('div');
+            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0;";
+            div.innerHTML = `
+                <span style="font-size:12px; font-weight:600; text-transform:uppercase;">${k}</span>
+                <div>
+                    <span style="font-size:12px; color:#8e44ad; font-weight:bold; margin-right:8px;">${val} km</span>
+                    <button onclick="editAdminDist('${k}')" style="background:#bdc3c7; color:#333; padding:4px 8px; font-size:10px;">✏️ Edytuj</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function editAdminDist(key) {
+        const current = appData.distances[key];
+        const newDist = prompt(`Edytuj dystans W OBIE STRONY dla "${key}":`, current);
+        if (newDist !== null && newDist.trim() !== '') {
+            const parsed = parseFloat(newDist.replace(',', '.'));
+            if (!isNaN(parsed)) {
+                appData.distances[key] = parsed;
+                saveAppData();
+                renderAdminDistList();
+            }
+        }
+    }
+
+    function recalculateZeros() {
+        let fixed = 0;
+        appData.history.forEach(item => {
+            let dist = parseFloat(item.distance);
+            if(isNaN(dist) || dist <= 0) {
+                const locs = String(item.location || '').split(', ');
+                const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
+                
+                if(appData.distances[routeKey] !== undefined) {
+                    item.distance = appData.distances[routeKey];
+                } else {
+                    let maxDist = 0;
+                    locs.forEach(l => {
+                        let distForLoc = appData.distances[l.trim().toLowerCase()] || 0;
+                        if(distForLoc > maxDist) maxDist = distForLoc;
+                    });
+                    item.distance = maxDist;
+                }
+                fixed++;
+            }
+        });
+        saveAppData();
+        renderHistory();
+        alert(`Operacja zakończona. Uzupełniono/przeliczono ${fixed} brakujących wpisów w Historii.`);
     }
 
     function copyToClipboard(btn) {
@@ -1378,7 +1408,7 @@ ${item.author}`;
                 <tr>
                     <th>Data wyjazdu</th>
                     <th>Zgłasza</th>
-                    <th>Lokalizacja / Dystans</th>
+                    <th>Lokalizacja</th>
                     <th style="width: 40px; text-align: center;"></th>
                 </tr>
             </thead>`;
