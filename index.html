@@ -43,7 +43,7 @@
         .form-group { margin-bottom: 15px; width: 100%; }
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #2c3e50; }
         input[type="text"], input[type="datetime-local"], input[type="number"], input[type="month"], select, textarea {
-            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: #fff;
+            width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; max-width: 100%; background: #fff;
         }
         textarea { resize: vertical; height: 90px; }
         
@@ -298,7 +298,7 @@
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
         
         <div class="app-footer">
-            Ostatnia aktualizacja: Listopad 2026
+            <span onclick="restoreBackup()" style="color: #bdc3c7; font-size: 11px; cursor: pointer; text-decoration: underline;">Przywróć stan bazy (z przed pobrania)</span>
         </div>
     </div>
 </div>
@@ -311,10 +311,11 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v47'; 
+    const STORAGE_KEY = 'rckik_app_data_v48'; // NOWY KLUCZ WERSJI
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
+    // Baza dystansów w kilometrach (W OBIE STRONY)
     const locationDistances = {
         "rckik łódź": 320,
         "rckik gdańsk": 740,
@@ -440,9 +441,11 @@
                     lastSync: saved.lastSync || 'Nigdy'
                 };
                 
+                // Agresywna naprawa dystansów dla starych protokołów, nawet jak zapisało się w nich 0
                 appData.history.forEach(item => {
-                    if(item.distance === undefined) {
-                        const locs = String(item.location).split(', ');
+                    let d = parseFloat(item.distance);
+                    if(isNaN(d) || d <= 0) {
+                        const locs = String(item.location || '').split(', ');
                         const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
                         
                         if(appData.distances[routeKey] !== undefined) {
@@ -450,8 +453,8 @@
                         } else {
                             let maxDist = 0;
                             locs.forEach(l => {
-                                let d = appData.distances[l.trim().toLowerCase()] || 0;
-                                if(d > maxDist) maxDist = d;
+                                let distForLoc = appData.distances[l.trim().toLowerCase()] || 0;
+                                if(distForLoc > maxDist) maxDist = distForLoc;
                             });
                             item.distance = maxDist;
                         }
@@ -655,20 +658,20 @@
             const row = document.createElement('div'); 
             row.className = 'participant-row';
             row.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <b style="font-size: 15px; color: #2c3e50;">${emp.name}</b>
                     <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: transparent; border: 1px solid #ced6e0; border-radius: 4px; color: #7f8c8d; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px;">
                         ${emp.hidden ? '⬆️ Pokaż na liście' : '⬇️ Ukryj'}
                     </button>
                 </div>
                 
-                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid #eee;">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; width: 100%; background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e4e7eb;">
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                         <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                            <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()"> Wypełnia
+                            <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()" style="transform: scale(1.2);"> Wypełnia
                         </label>
                         <label style="font-size:13px; color:#34495e; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                            <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}"> Towarzyszy
+                            <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" style="transform: scale(1.2);"> Towarzyszy
                         </label>
                     </div>
                     <button type="button" onclick="togglePrivateCostField(${index})" style="font-size: 11px; padding: 5px 10px; background:#f39c12; color:#fff; border: none; border-radius: 4px; font-weight: bold; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">💸 Koszta</button>
@@ -771,8 +774,8 @@
 
     function calculateDurationString(depStr, retStr) {
         if (!depStr || !retStr) return 'Brak danych';
-        const start = new Date(String(depStr).replace(' ', 'T'));
-        const end = new Date(String(retStr).replace(' ', 'T'));
+        const start = new Date(depStr.replace(' ', 'T'));
+        const end = new Date(retStr.replace(' ', 'T'));
         const diffMs = end - start;
         if (diffMs <= 0 || isNaN(diffMs)) return '0 godz. 0 min.';
         
@@ -890,6 +893,7 @@
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
         
+        // KOSZTY PRYWATNE
         let myCosts = 0;
         let myCostsDesc = '';
         const empIndex = appData.employees.findIndex(e => e.name === authorName);
@@ -1374,7 +1378,7 @@ ${item.author}`;
                 <tr>
                     <th>Data wyjazdu</th>
                     <th>Zgłasza</th>
-                    <th>Lokalizacja</th>
+                    <th>Lokalizacja / Dystans</th>
                     <th style="width: 40px; text-align: center;"></th>
                 </tr>
             </thead>`;
@@ -1401,7 +1405,10 @@ ${item.author}`;
                 <tr class="history-row" onclick="toggleDetails(${i.id})">
                     <td style="white-space: nowrap;">${shortDate}</td>
                     <td><b>${i.author}</b></td>
-                    <td>${i.location || 'Brak'}</td>
+                    <td>
+                        ${i.location || 'Brak'}<br>
+                        <span style="font-size: 11px; color: #888; font-weight: 600;">🚗 ${itemDistance} km</span>
+                    </td>
                     <td style="text-align: center; color: var(--primary-color); font-size: 10px;" id="icon-${i.id}">▼</td>
                 </tr>
                 <tr id="details-${i.id}" class="details-row">
@@ -1510,7 +1517,7 @@ ${item.author}`;
                 let vehHtml = '';
                 if (Object.keys(vehKm).length > 0) {
                     vehHtml = `<div style="margin-top: 15px; font-size: 13px; text-align: left; background: #fff; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color);">
-                        <div style="font-weight: bold; margin-bottom: 8px; color: var(--primary-color);">Dystans wg pojazdów (trasy ze znanym dystansem):</div>`;
+                        <div style="font-weight: bold; margin-bottom: 8px; color: var(--primary-color);">Dystans wg pojazdów:</div>`;
                     
                     const sortedVehs = Object.keys(vehKm).sort((a,b) => vehKm[b] - vehKm[a]);
                     sortedVehs.forEach(v => {
