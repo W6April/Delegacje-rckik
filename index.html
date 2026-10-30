@@ -325,7 +325,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v49'; 
+    const STORAGE_KEY = 'rckik_app_data_v50'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     // Baza dystansów w kilometrach (W OBIE STRONY)
@@ -415,6 +415,7 @@
     function loadData() {
         let savedStr = null;
         if (!localStorage.getItem(STORAGE_KEY)) {
+            // Migracja ze starszych wersji
             for(let v = 50; v >= 20; v--) {
                 const fallback = localStorage.getItem('rckik_app_data_v' + v);
                 if (fallback) {
@@ -620,28 +621,28 @@
             row.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <b style="font-size: 15px; color: #2c3e50;">${emp.name}</b>
-                    <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: transparent; border: 1px solid #ced6e0; border-radius: 4px; color: #7f8c8d; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px;">
-                        ${emp.hidden ? '⬆️ Pokaż na liście' : '⬇️ Ukryj'}
+                    <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: #f1f2f6; border: 1px solid #ced6e0; border-radius: 4px; color: #555; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px;" title="${emp.hidden ? 'Przenieś do głównych' : 'Ukryj w drzewku'}">
+                        ${emp.hidden ? '⬆️ Pokaż' : '⬇️ Ukryj'}
                     </button>
                 </div>
                 
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; width: 100%; background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e4e7eb;">
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
+                        <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; margin:0;">
                             <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()" style="transform: scale(1.2);"> Wypełnia
                         </label>
-                        <label style="font-size:13px; color:#34495e; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
+                        <label style="font-size:13px; color:#34495e; cursor:pointer; display:flex; align-items:center; gap:6px; margin:0;">
                             <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" style="transform: scale(1.2);"> Towarzyszy
                         </label>
                     </div>
-                    <button type="button" onclick="togglePrivateCostField(${index})" style="font-size: 11px; padding: 5px 10px; background:#f39c12; color:#fff; border: none; border-radius: 4px; font-weight: bold; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">💸 Koszta</button>
+                    <button type="button" onclick="togglePrivateCostField(${index})" class="secondary" style="font-size: 11px; padding: 5px 12px; background:#f39c12; color:#fff; border: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">💸 Koszta</button>
                 </div>
                 
-                <div id="cost_field_${index}" style="display:none; margin-top: 2px; padding: 12px; background: #fffdf5; border: 1px solid #f1c40f; border-radius: 6px;">
-                    <label style="font-size:12px; color:#555; font-weight:bold; margin-bottom: 8px; display:block;">Poniesione koszty prywatne:</label>
+                <div id="cost_field_${index}" style="display:none; width: 100%; margin-top: 5px; padding: 12px; background: #fffdf5; border: 1px solid #f1c40f; border-radius: 6px;">
+                    <label style="font-size:12px; color:#555; font-weight:bold; margin-bottom: 8px; display:block;">Poniesione koszty z własnych środków:</label>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <input type="number" id="cost_val_${index}" placeholder="Kwota (zł)" step="0.01" min="0" style="flex:1; min-width: 80px; padding: 8px; font-size: 13px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
-                        <input type="text" id="cost_desc_${index}" placeholder="Za co? (np. Faktura autostrada)" style="flex:2; min-width: 140px; padding: 8px; font-size: 13px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
+                        <input type="number" id="cost_val_${index}" placeholder="Kwota (zł)" step="0.01" min="0" style="flex:1; min-width: 90px; padding: 8px; font-size: 14px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
+                        <input type="text" id="cost_desc_${index}" placeholder="Za co? (np. Faktura autostrada)" style="flex:2; min-width: 150px; padding: 8px; font-size: 14px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
                     </div>
                 </div>
             `;
@@ -711,7 +712,16 @@
         saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
     }
 
-    // Nowa logika: Dokładnie od 12h przysługuje pełna dieta 100%. Mniej niż 12 to 50%.
+    function getDurationInHours(depStr, retStr) {
+        if (!depStr || !retStr) return 0;
+        const start = new Date(String(depStr).replace(' ', 'T'));
+        const end = new Date(String(retStr).replace(' ', 'T'));
+        const diffMs = end - start;
+        if (diffMs <= 0 || isNaN(diffMs)) return 0;
+        return diffMs / (1000 * 60 * 60);
+    }
+
+    // NALICZANIE DIETY (Dokładnie od 12h przysługuje pełna, od 8h do 12h połowa)
     function calculateAllowance(depStr, retStr) {
         if (!depStr || !retStr) return 0;
         const totalHours = getDurationInHours(depStr, retStr);
@@ -750,15 +760,6 @@
         } else {
             return `${hours} godz. ${mins} min.`;
         }
-    }
-
-    function getDurationInHours(depStr, retStr) {
-        if (!depStr || !retStr) return 0;
-        const start = new Date(String(depStr).replace(' ', 'T'));
-        const end = new Date(String(retStr).replace(' ', 'T'));
-        const diffMs = end - start;
-        if (diffMs <= 0 || isNaN(diffMs)) return 0;
-        return diffMs / (1000 * 60 * 60);
     }
 
     function calculateAllowancePreview() {
@@ -874,7 +875,7 @@
         if (adminEditingId) {
             let item = appData.history.find(i => i.id === adminEditingId);
             if (item) {
-                // Jeśli nie zmieniono miasta, to system KONSREWUJE (zachowuje) stary, ręczny dystans.
+                // Zachowaj ręcznie wpisany dystans, o ile nie zmieniono fizycznie docelowych miast w edycji
                 let finalDistanceToSave = totalTripDistance;
                 if (item.location === locationStr && item.distance !== undefined && item.distance !== 0) {
                     finalDistanceToSave = item.distance;
@@ -1052,7 +1053,7 @@ ${authorName}`;
                 <span style="font-size:12px; font-weight:600; text-transform:uppercase;">${k}</span>
                 <div>
                     <span style="font-size:12px; color:#8e44ad; font-weight:bold; margin-right:8px;">${val} km</span>
-                    <button onclick="editAdminDist('${k}')" style="background:#bdc3c7; color:#333; padding:4px 8px; font-size:10px;">✏️ Edytuj</button>
+                    <button onclick="editAdminDist('${k}')" style="background:#bdc3c7; color:#333; padding:4px 8px; font-size:10px; border:none; border-radius:4px; cursor:pointer;">✏️ Edytuj</button>
                 </div>
             `;
             container.appendChild(div);
@@ -1520,6 +1521,7 @@ ${item.author}`;
                 let totalKm = 0;
                 let locCounts = {};
                 let vehKm = {};
+                let uniqueUserTrips = new Set();
 
                 empHist.forEach(i => {
                     totalAllowance += parseFloat(i.allowance) || 0;
@@ -1534,10 +1536,14 @@ ${item.author}`;
                         let dist = parseFloat(i.distance);
                         if (isNaN(dist)) dist = 0;
                         
-                        totalKm += dist;
-                        
-                        if (dist > 0 && i.vehicle) {
-                            vehKm[i.vehicle] = (vehKm[i.vehicle] || 0) + dist;
+                        const tripKey = i.departure + "_" + i.vehicle;
+                        if (!uniqueUserTrips.has(tripKey)) {
+                            uniqueUserTrips.add(tripKey);
+                            totalKm += dist;
+                            
+                            if (dist > 0 && i.vehicle) {
+                                vehKm[i.vehicle] = (vehKm[i.vehicle] || 0) + dist;
+                            }
                         }
                     }
                 });
@@ -1585,6 +1591,7 @@ ${item.author}`;
                 let totalTrips = 0;
                 let globalKm = 0;
                 let vehCounts = {};
+                let uniqueFleetTrips = new Set();
                 
                 hist.forEach(i => {
                     if(!stats[i.author]) stats[i.author] = { trips: 0, allowance: 0 };
@@ -1599,10 +1606,15 @@ ${item.author}`;
                         let dist = parseFloat(i.distance);
                         if (isNaN(dist)) dist = 0;
                         
-                        globalKm += dist;
+                        const tripKey = i.departure + "_" + i.vehicle;
                         
-                        if (i.vehicle && dist > 0) {
-                            vehCounts[i.vehicle] = (vehCounts[i.vehicle] || 0) + dist;
+                        if (!uniqueFleetTrips.has(tripKey)) {
+                            uniqueFleetTrips.add(tripKey);
+                            globalKm += dist;
+                            
+                            if (i.vehicle && dist > 0) {
+                                vehCounts[i.vehicle] = (vehCounts[i.vehicle] || 0) + dist;
+                            }
                         }
                     }
                 });
