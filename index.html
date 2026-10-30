@@ -112,18 +112,6 @@
             animation: fall linear forwards;
             user-select: none;
         }
-
-        /* Tagi lokalizacji */
-        .loc-chip {
-            background-color: var(--primary-color); color: white; padding: 6px 12px; 
-            border-radius: 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;
-        }
-        .loc-chip span {
-            cursor: pointer; font-weight: bold; background: rgba(0,0,0,0.2); 
-            border-radius: 50%; width: 18px; height: 18px; display: inline-flex; 
-            align-items: center; justify-content: center; transition: 0.2s;
-        }
-        .loc-chip span:hover { background: rgba(0,0,0,0.4); }
     </style>
 </head>
 <body>
@@ -146,20 +134,19 @@
         <h2>Nowa Delegacja</h2>
         
         <div class="form-group">
-            <label for="locationSelect">Lokalizacja RCKiK / WCKiK (dodaj do wyjazdu):</label>
-            <div style="display: flex; gap: 8px;">
-                <select id="locationSelect" style="flex: 1;"></select>
-                <button type="button" onclick="addSelectedLocation()">+ Dodaj</button>
+            <label for="locationSelect">Główna lokalizacja (cel wyjazdu):</label>
+            <select id="locationSelect"></select>
+            <div class="inline-add" style="margin-top: 8px;">
+                <input type="text" id="newLocationInput" placeholder="Nowa lokalizacja (np. RCKiK Warszawa)">
+                <button type="button" onclick="addLocation()">Dodaj do słownika</button>
             </div>
-            
-            <div id="selectedLocationsBox" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; min-height: 40px; padding: 10px; background: #f8f9fa; border: 1px dashed #ced6e0; border-radius: 4px;">
-                <span style="color: #999; font-size: 13px; font-style: italic; display: flex; align-items: center; width: 100%;">Brak wybranych lokalizacji (użyj przycisku "+ Dodaj")</span>
-            </div>
+        </div>
 
-            <div class="inline-add" style="margin-top: 10px; border-top: 1px dashed #e1e1e1; padding-top: 10px;">
-                <input type="text" id="newLocationInput" placeholder="Brak na liście? Wpisz nową...">
-                <button type="button" onclick="addNewLocationToDict()" class="secondary">Zapisz do słownika</button>
-            </div>
+        <div class="form-group" style="background: #fafafa; padding: 10px; border: 1px dashed #ccc; border-radius: 4px;">
+            <label for="locationSelect2" style="color: #555; font-size: 13px;">Druga lokalizacja (opcjonalnie, jeśli wyjazd był łączony):</label>
+            <select id="locationSelect2">
+                <option value="">-- Brak (tylko jeden cel) --</option>
+            </select>
         </div>
 
         <div class="form-group">
@@ -213,10 +200,11 @@
             <textarea id="workDescription" placeholder="Szczegółowy opis wykonanych czynności..."></textarea>
         </div>
 
-        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj Protokół</button>
+        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj i Zapisz do Dziennika (Historii)</button>
         
-        <div style="text-align: right; margin-top: 15px;">
-            <button type="button" class="secondary" onclick="resetToDefaults()" style="font-size: 11px; padding: 5px 10px; background: #e74c3c;">Resetuj słowniki do domyślnych</button>
+        <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <button type="button" class="secondary" onclick="clearForm()" style="font-size: 11px; padding: 5px 10px; background: #7f8c8d;">Wyczyść formularz</button>
+            <button type="button" class="secondary" onclick="resetToDefaults()" style="font-size: 11px; padding: 5px 10px; background: #e74c3c;">Resetuj słowniki</button>
         </div>
     </div>
 
@@ -263,9 +251,7 @@
                 </select>
             </div>
         </div>
-        <div id="statsResults">
-            <!-- Tutaj zostaną wygenerowane statystyki -->
-        </div>
+        <div id="statsResults"></div>
     </div>
 
     <!-- CHMURA -->
@@ -297,7 +283,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v32'; 
+    const STORAGE_KEY = 'rckik_app_data_v34'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     const locationDistances = {
@@ -356,7 +342,6 @@
     };
 
     let appData;
-    let currentTripLocations = []; 
 
     function loadData() {
         try {
@@ -391,7 +376,6 @@
             setDefaultDates(); 
         }
         
-        renderSelectedLocations();
         populateFilterDropdown(); 
         calculateAllowancePreview();
         updateSyncDateUI();
@@ -415,50 +399,33 @@
     }
 
     function renderLocations() {
-        const select = document.getElementById('locationSelect'); if (!select) return;
-        select.innerHTML = '';
-        appData.locations.forEach(loc => { 
-            const opt = document.createElement('option'); 
-            opt.value = loc; 
-            opt.textContent = loc; 
-            select.appendChild(opt); 
-        });
-    }
-
-    function addSelectedLocation() {
-        const select = document.getElementById('locationSelect');
-        const loc = select.value;
-        if (!loc) return;
-        if (currentTripLocations.includes(loc)) {
-            return alert('Ta lokalizacja została już dodana do obecnego wyjazdu.');
-        }
-        currentTripLocations.push(loc);
-        renderSelectedLocations();
-    }
-
-    function removeLocationFromTrip(index) {
-        currentTripLocations.splice(index, 1);
-        renderSelectedLocations();
-    }
-
-    function renderSelectedLocations() {
-        const box = document.getElementById('selectedLocationsBox');
-        box.innerHTML = '';
+        const select1 = document.getElementById('locationSelect'); 
+        const select2 = document.getElementById('locationSelect2'); 
+        if (!select1 || !select2) return;
         
-        if(currentTripLocations.length === 0) {
-            box.innerHTML = '<span style="color: #999; font-size: 13px; font-style: italic; display: flex; align-items: center; width: 100%;">Brak wybranych lokalizacji (wybierz z listy i kliknij "+ Dodaj")</span>';
-            return;
-        }
+        const prevVal1 = select1.value;
+        const prevVal2 = select2.value;
 
-        currentTripLocations.forEach((loc, index) => {
-            const chip = document.createElement('div');
-            chip.className = 'loc-chip';
-            chip.innerHTML = `${loc} <span onclick="removeLocationFromTrip(${index})" title="Usuń lokalizację z wyjazdu">&times;</span>`;
-            box.appendChild(chip);
+        select1.innerHTML = '';
+        select2.innerHTML = '<option value="">-- Brak (tylko jedna lokalizacja) --</option>';
+        
+        appData.locations.forEach(loc => { 
+            const opt1 = document.createElement('option'); 
+            opt1.value = loc; 
+            opt1.textContent = loc; 
+            select1.appendChild(opt1); 
+
+            const opt2 = document.createElement('option'); 
+            opt2.value = loc; 
+            opt2.textContent = loc; 
+            select2.appendChild(opt2); 
         });
+
+        if (prevVal1 && [...select1.options].some(o => o.value === prevVal1)) select1.value = prevVal1;
+        if (prevVal2 && [...select2.options].some(o => o.value === prevVal2)) select2.value = prevVal2;
     }
 
-    function addNewLocationToDict() {
+    function addLocation() {
         const val = document.getElementById('newLocationInput').value.trim();
         if (!val) return alert('Wpisz nazwę lokalizacji.');
         if (appData.locations.includes(val)) return alert('Taka lokalizacja już istnieje w bazie (słowniku).');
@@ -468,12 +435,6 @@
         renderLocations(); 
         
         document.getElementById('locationSelect').value = val;
-        
-        if (!currentTripLocations.includes(val)) {
-            currentTripLocations.push(val);
-            renderSelectedLocations();
-        }
-
         document.getElementById('newLocationInput').value = '';
     }
 
@@ -514,8 +475,9 @@
                         <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}"> Towarzyszy
                     </label>
                 </div>
-                <div class="file-input-container" style="flex: 1; min-width: 150px; justify-content: flex-end;">
+                <div class="file-input-container" style="flex: 1; min-width: 150px; display:flex; flex-direction:column; align-items:flex-end;">
                     <input type="file" id="file_${index}" data-emp="${emp.name}" accept="image/*,.pdf" style="width: 100%; max-width:200px;">
+                    <span style="font-size: 10px; color: #888; margin-top: 4px; text-align: right;">*(sam plik dodaj potem ręcznie w poczcie)</span>
                 </div>
             `;
             
@@ -607,8 +569,8 @@
 
     function calculateDurationString(depStr, retStr) {
         if (!depStr || !retStr) return 'Brak danych';
-        const start = new Date(String(depStr).replace(' ', 'T'));
-        const end = new Date(String(retStr).replace(' ', 'T'));
+        const start = new Date(depStr.replace(' ', 'T'));
+        const end = new Date(retStr.replace(' ', 'T'));
         const diffMs = end - start;
         if (diffMs <= 0 || isNaN(diffMs)) return '0 godz. 0 min.';
         
@@ -637,6 +599,23 @@
         const dep = document.getElementById('departureTime').value; const ret = document.getElementById('returnTime').value;
         document.getElementById('previewAllowanceText').textContent = calculateAllowance(dep, ret).toFixed(2) + ' zł';
     }
+    
+    function clearForm() {
+        if (confirm('Czy na pewno chcesz wyczyścić formularz?')) {
+            document.getElementById('locationSelect2').value = '';
+            document.getElementById('delegationPurpose').value = '';
+            document.getElementById('workDescription').value = '';
+            
+            document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
+            document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
+                cb.checked = false;
+                cb.disabled = false;
+                cb.parentElement.style.opacity = '1';
+            });
+            setDefaultDates();
+            calculateAllowancePreview();
+        }
+    }
 
     function generateProtocols() {
         const authorRadio = document.querySelector('input[name="authorRadio"]:checked');
@@ -645,24 +624,27 @@
         const returnT = document.getElementById('returnTime').value;
         if (!departure || !returnT) return alert('Uzupełnij daty wyjazdu i powrotu.');
 
-        if (currentTripLocations.length === 0) {
-            return alert('Zaznacz i dodaj przynajmniej jedną lokalizację docelową.');
-        }
-        const locationStr = currentTripLocations.join(', ');
+        const loc1 = document.getElementById('locationSelect').value;
+        const loc2 = document.getElementById('locationSelect2').value;
+        if (!loc1) return alert('Wybierz główną lokalizację.');
+        const locationStr = loc2 ? `${loc1}, ${loc2}` : loc1;
 
         const authorName = authorRadio.value;
         const formattedDeparture = departure.replace('T', ' ');
         const formattedReturn = returnT.replace('T', ' ');
 
-        const isDuplicate = appData.history.some(item => 
+        const duplicateIndex = appData.history.findIndex(item => 
             item.author === authorName && 
             item.departure === formattedDeparture && 
             item.return === formattedReturn
         );
 
-        if (isDuplicate) {
-            alert('Uwaga! W tej dacie i godzinach już zgłaszałeś protokół.');
-            return;
+        if (duplicateIndex !== -1) {
+            if (confirm('Uwaga! Masz już wygenerowany protokół dla Ciebie w dokładnie tej samej dacie i godzinach.\n\nCzy chcesz ZAKTUALIZOWAĆ (nadpisać) go obecnie wprowadzonymi w formularzu danymi?')) {
+                appData.history.splice(duplicateIndex, 1);
+            } else {
+                return;
+            }
         }
 
         const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
@@ -736,7 +718,10 @@ ${authorName}`;
             isSent: false,
             updatedAt: Date.now()
         });
+        
         saveAppData();
+        
+        document.getElementById('filterEmployee').value = "";
 
         const emailsContainer = document.getElementById('emailsContainer');
         emailsContainer.innerHTML = `
@@ -835,7 +820,7 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
   ${item.workDescription || 'Brak'}
 
 • Należna dieta krajowa:
-  ${item.allowance}
+  ${item.allowance} PLN
 
 • Załącznik (faktura/rachunek):
   ${item.attachment}
@@ -857,10 +842,17 @@ ${item.author}`;
         const item = appData.history.find(i => i.id === id);
         if (!item) return;
         
-        if (item.location) {
-            currentTripLocations = item.location.split(', ');
+        const locs = item.location ? item.location.split(', ') : [];
+        const locSelect = document.getElementById('locationSelect');
+        const locSelect2 = document.getElementById('locationSelect2');
+        
+        if (locs.length > 0 && [...locSelect.options].some(o => o.value === locs[0])) {
+            locSelect.value = locs[0];
+        }
+        if (locs.length > 1 && [...locSelect2.options].some(o => o.value === locs[1])) {
+            locSelect2.value = locs[1];
         } else {
-            currentTripLocations = [];
+            locSelect2.value = '';
         }
         
         const vehSelect = document.getElementById('vehicleSelect');
@@ -887,7 +879,6 @@ ${item.author}`;
         });
         
         switchTab('form');
-        renderSelectedLocations();
         calculateAllowancePreview();
         
         alert('✅ Skopiowano dane wyjazdu do formularza.\n\nWybierz swoje imię w polu "Wypełnia", sprawdź daty i wygeneruj swój protokół.');
@@ -1219,11 +1210,6 @@ ${item.author}`;
             saveAppData();
             renderHistory();
         }
-    }
-    
-    function resetForm() { 
-        switchTab('form'); 
-        calculateAllowancePreview(); 
     }
     
     function resetToDefaults() {
