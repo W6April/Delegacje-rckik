@@ -30,7 +30,7 @@
         }
 
         .container { max-width: 950px; margin: 0 auto; width: 100%; }
-        header { text-align: center; margin-bottom: 20px; user-select: none; cursor: default; }
+        header { text-align: center; margin-bottom: 20px; }
         header h1 { color: var(--primary-color); margin-bottom: 5px; font-size: 1.6rem; }
         header p { color: #666; margin-top: 0; font-size: 0.9rem; }
 
@@ -63,8 +63,12 @@
         button.secondary:hover { background-color: #616a6b; }
         button.cloud-btn { background-color: #2980b9; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 16px; border-radius: 8px;}
         button.cloud-btn:hover { background-color: #2471a3; }
+        
+        .btn-icon-delete { background: transparent; color: #e74c3c; border: none; font-size: 20px; cursor: pointer; padding: 4px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-icon-delete:hover { transform: scale(1.1); }
 
         .participants-container { display: flex; flex-direction: column; gap: 10px; background: #fafafa; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; }
+        
         .participant-row { display: flex; flex-direction: column; background: #fff; padding: 12px; border: 1px solid #dcdde1; border-radius: 6px; gap: 8px; }
 
         .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; border-radius: 6px; }
@@ -134,8 +138,7 @@
 <div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
 
 <div class="container" id="mainContainer">
-    <!-- Ukryty przycisk admina poprzez 5-krotne kliknięcie -->
-    <header onclick="handleAdminClick()">
+    <header>
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
     </header>
@@ -150,6 +153,7 @@
     <!-- FORMULARZ DELEGACJI -->
     <div class="card" id="form-card">
         
+        <!-- SEKCJA 1: TRASA I POJAZD -->
         <h3 class="section-title">📍 Trasa i Pojazd</h3>
         
         <div class="form-group">
@@ -184,6 +188,7 @@
             </div>
         </div>
 
+        <!-- SEKCJA 2: UCZESTNICY -->
         <h3 class="section-title">👥 Uczestnicy Delegacji</h3>
         <p style="font-size: 12px; color: #666; margin-bottom: 12px; line-height: 1.4;">Wybierz kto <b>wypełnia</b> protokół oraz zaznacz ewentualne osoby, z którymi podróżował. Dodaj koszty prywatne (jeśli wystąpiły).</p>
         
@@ -201,6 +206,7 @@
             </div>
         </div>
 
+        <!-- SEKCJA 3: SZCZEGÓŁY -->
         <h3 class="section-title">📅 Czas i Cel Wyjazdu</h3>
 
         <div class="date-inputs-row">
@@ -228,7 +234,7 @@
             <textarea id="workDescription" placeholder="Szczegółowy opis wykonanych czynności..."></textarea>
         </div>
 
-        <button type="button" id="mainSubmitBtn" class="btn-submit" onclick="generateProtocols()">Generuj i Zapisz do Dziennika (Historii)</button>
+        <button type="button" class="btn-submit" onclick="generateProtocols()">Generuj i Zapisz do Dziennika (Historii)</button>
         
         <div style="display: flex; justify-content: space-between; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
             <button type="button" class="secondary" onclick="clearForm()" style="font-size: 12px; padding: 8px 12px; background: #7f8c8d; flex: 1; text-align: center;">Wyczyść formularz</button>
@@ -298,7 +304,7 @@
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
         
         <div class="app-footer">
-            Ostatnia aktualizacja: Listopad 2026
+            <span onclick="restoreBackup()" style="color: #bdc3c7; font-size: 11px; cursor: pointer; text-decoration: underline;">Przywróć stan bazy (z przed pobrania)</span>
         </div>
     </div>
 </div>
@@ -311,7 +317,8 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v45'; 
+    const STORAGE_KEY = 'rckik_app_data_v43'; 
+    const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     // Baza dystansów w kilometrach (W OBIE STRONY)
@@ -336,31 +343,6 @@
         "rckik saska + ckik", "rckik siedlce + garwolin", "rckik siedlce +garwolin"
     ];
 
-    // System Ukrytego Administratora
-    let adminClicks = 0;
-    let adminTimeout;
-    let isAdmin = false;
-    let adminEditingId = null;
-
-    function handleAdminClick() {
-        adminClicks++;
-        clearTimeout(adminTimeout);
-        adminTimeout = setTimeout(() => adminClicks = 0, 1500);
-        if(adminClicks >= 5) {
-            adminClicks = 0;
-            const pin = prompt("Podaj kod administratora:");
-            if(pin === "9508") {
-                isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.\nW Historii pojawiła się opcja ukrytej edycji protokołów.");
-                if (document.getElementById('history-card').style.display === 'block') {
-                    renderHistory();
-                }
-            } else if(pin !== null) {
-                alert("Nieprawidłowy kod.");
-            }
-        }
-    }
-
     function getDistance(locName) {
         if (!locName || typeof locName !== 'string') return 0;
         const locs = locName.split(', ');
@@ -372,6 +354,7 @@
         return total;
     }
 
+    // Reguła sortowania: Najpierw RCKiK, potem reszta (WCKiK), w obrębie bloku alfabetycznie.
     function sortLocations(locs) {
         return locs.sort((a, b) => {
             const aIsRckik = a.toLowerCase().startsWith('rckik');
@@ -456,6 +439,29 @@
     loadData();
 
     function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
+
+    function createBackup() {
+        if(appData && appData.locations) {
+            localStorage.setItem(BACKUP_KEY, JSON.stringify(appData));
+        }
+    }
+
+    function restoreBackup() {
+        const pin = prompt("Podaj kod PIN, aby przywrócić poprzedni stan bazy (sprzed ostatniej synchronizacji):");
+        if (pin === "9508") {
+            const backupStr = localStorage.getItem(BACKUP_KEY);
+            if (backupStr) {
+                localStorage.setItem(STORAGE_KEY, backupStr);
+                loadData();
+                initApp();
+                alert("Przywrócono poprzedni stan danych pomyślnie!");
+            } else {
+                alert("Brak kopii zapasowej do przywrócenia.");
+            }
+        } else if (pin !== null) {
+            alert("Nieprawidłowy kod PIN.");
+        }
+    }
 
     function initApp() {
         renderLocations(); renderVehicles(); renderEmployees(); 
@@ -735,8 +741,8 @@
 
     function calculateDurationString(depStr, retStr) {
         if (!depStr || !retStr) return 'Brak danych';
-        const start = new Date(depStr.replace(' ', 'T'));
-        const end = new Date(retStr.replace(' ', 'T'));
+        const start = new Date(String(depStr).replace(' ', 'T'));
+        const end = new Date(String(retStr).replace(' ', 'T'));
         const diffMs = end - start;
         if (diffMs <= 0 || isNaN(diffMs)) return '0 godz. 0 min.';
         
@@ -768,10 +774,6 @@
     
     function clearForm() {
         if (confirm('Czy na pewno chcesz wyczyścić formularz?')) {
-            adminEditingId = null;
-            document.getElementById('mainSubmitBtn').textContent = "Generuj i Zapisz do Dziennika (Historii)";
-            document.getElementById('mainSubmitBtn').style.background = "var(--primary-color)";
-
             document.getElementById('locationSelect2').value = '';
             document.getElementById('delegationPurpose').value = '';
             document.getElementById('workDescription').value = '';
@@ -849,11 +851,26 @@
         const formattedDeparture = departure.replace('T', ' ');
         const formattedReturn = returnT.replace('T', ' ');
 
+        const duplicateIndex = appData.history.findIndex(item => 
+            item.author === authorName && 
+            item.departure === formattedDeparture && 
+            item.return === formattedReturn
+        );
+
+        if (duplicateIndex !== -1) {
+            if (confirm('Uwaga! Masz już wygenerowany protokół dla Ciebie w dokładnie tej samej dacie i godzinach.\n\nCzy chcesz ZAKTUALIZOWAĆ (nadpisać) go obecnie wprowadzonymi w formularzu danymi?')) {
+                appData.history.splice(duplicateIndex, 1);
+            } else {
+                return;
+            }
+        }
+
         const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
         const vehicle = document.getElementById('vehicleSelect').value;
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
         
+        // KOSZTY PRYWATNE
         let myCosts = 0;
         let myCostsDesc = '';
         const empIndex = appData.employees.findIndex(e => e.name === authorName);
@@ -869,51 +886,6 @@
         const allowanceAmount = calculateAllowance(departure, returnT);
         const durationStr = calculateDurationString(departure, returnT);
         const totalAmountToReturn = allowanceAmount + myCosts;
-
-        // -- TRYB ADMINISTRATORA (EDYCJA) --
-        if (adminEditingId) {
-            let item = appData.history.find(i => i.id === adminEditingId);
-            if (item) {
-                item.location = locationStr;
-                item.vehicle = vehicle;
-                item.departure = formattedDeparture;
-                item.return = formattedReturn;
-                item.purpose = purpose || 'Brak';
-                item.workDescription = workDesc || 'Brak';
-                item.author = authorName;
-                item.coParticipants = coParts;
-                item.allowance = allowanceAmount.toFixed(2) + ' zł';
-                item.privateCosts = myCosts;
-                item.privateCostsDesc = myCostsDesc;
-                item.distance = totalTripDistance;
-                item.updatedAt = Date.now();
-                
-                saveAppData();
-                adminEditingId = null;
-                const btnSubmit = document.getElementById('mainSubmitBtn');
-                btnSubmit.textContent = "Generuj i Zapisz do Dziennika (Historii)";
-                btnSubmit.style.background = "var(--primary-color)";
-                
-                switchTab('history');
-                alert("Protokół pomyślnie zaktualizowany w bazie bez dublowania i powiadomień e-mail (Tryb Admin).");
-                return;
-            }
-        }
-        // ----------------------------------
-
-        const duplicateIndex = appData.history.findIndex(item => 
-            item.author === authorName && 
-            item.departure === formattedDeparture && 
-            item.return === formattedReturn
-        );
-
-        if (duplicateIndex !== -1) {
-            if (confirm('Uwaga! Masz już wygenerowany protokół dla Ciebie w dokładnie tej samej dacie i godzinach.\n\nCzy chcesz ZAKTUALIZOWAĆ (nadpisać) go obecnie wprowadzonymi w formularzu danymi?')) {
-                appData.history.splice(duplicateIndex, 1);
-            } else {
-                return;
-            }
-        }
 
         const emailSubject = `${locationStr} - ${authorName}`;
         let emailBody = `Szanowny Panie Kierowniku,
@@ -931,9 +903,6 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 
 • Pojazd:
   ${vehicle}
-
-• Przejechany dystans (w obie strony):
-  ${totalTripDistance} km
 
 • Termin wyjazdu:
   ${formattedDeparture}
@@ -1088,7 +1057,6 @@ ${authorName}`;
         
         const myCosts = parseFloat(item.privateCosts) || 0;
         const totalAmountToReturn = parseFloat(item.allowance) + myCosts;
-        const distToPrint = parseFloat(item.distance) || 0;
         
         let emailBody = `Szanowny Panie Kierowniku,
 
@@ -1105,9 +1073,6 @@ Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
 
 • Pojazd:
   ${item.vehicle}
-
-• Przejechany dystans (w obie strony):
-  ${distToPrint} km
 
 • Termin wyjazdu:
   ${item.departure}
@@ -1207,71 +1172,6 @@ ${item.author}`;
         alert('✅ Skopiowano dane wyjazdu do formularza.\n\nWybierz swoje imię w polu "Wypełnia", sprawdź daty i wygeneruj swój protokół.');
     }
 
-    function adminEditProtocol(id) {
-        const item = appData.history.find(i => i.id === id);
-        if (!item) return;
-
-        adminEditingId = id;
-
-        const locs = item.location ? item.location.split(', ') : [];
-        const locSelect = document.getElementById('locationSelect');
-        const locSelect2 = document.getElementById('locationSelect2');
-        
-        if (locs.length > 0 && [...locSelect.options].some(o => o.value === locs[0])) {
-            locSelect.value = locs[0];
-        }
-        if (locs.length > 1 && [...locSelect2.options].some(o => o.value === locs[1])) {
-            locSelect2.value = locs[1];
-        } else {
-            locSelect2.value = '';
-        }
-        
-        const vehSelect = document.getElementById('vehicleSelect');
-        if ([...vehSelect.options].some(o => o.value === item.vehicle)) vehSelect.value = item.vehicle;
-
-        document.getElementById('departureTime').value = item.departure ? item.departure.replace(' ', 'T') : '';
-        document.getElementById('returnTime').value = item.return ? item.return.replace(' ', 'T') : '';
-        
-        document.getElementById('delegationPurpose').value = (item.purpose && item.purpose !== 'Brak' && item.purpose !== 'Nie podano') ? item.purpose : '';
-        document.getElementById('workDescription').value = (item.workDescription && item.workDescription !== 'Brak' && item.workDescription !== 'Nie podano') ? item.workDescription : '';
-        
-        let allPeople = [];
-        if (item.author) allPeople.push(item.author);
-        if (item.coParticipants && item.coParticipants !== 'brak' && item.coParticipants !== 'Nie podano') {
-            allPeople = allPeople.concat(item.coParticipants.split(', '));
-        }
-        
-        document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
-        
-        document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-            cb.checked = allPeople.includes(cb.value);
-            cb.disabled = false;
-            cb.parentElement.style.opacity = '1';
-        });
-        
-        const myCosts = parseFloat(item.privateCosts) || 0;
-        if (myCosts > 0 && item.author) {
-            const empIndex = appData.employees.findIndex(e => e.name === item.author);
-            if(empIndex !== -1) {
-                const field = document.getElementById('cost_field_' + empIndex);
-                if (field) field.style.display = 'block';
-                const vIn = document.getElementById('cost_val_' + empIndex);
-                const dIn = document.getElementById('cost_desc_' + empIndex);
-                if(vIn) vIn.value = myCosts;
-                if(dIn) dIn.value = item.privateCostsDesc || '';
-            }
-        }
-        
-        const btnSubmit = document.getElementById('mainSubmitBtn');
-        btnSubmit.textContent = "💾 Zapisz zmiany w protokole (Tryb Admin)";
-        btnSubmit.style.background = "#8e44ad";
-
-        switchTab('form');
-        calculateAllowancePreview();
-        
-        alert(`Tryb edycji (Admin) dla wyjazdu: ${item.location}.\nPopraw błędy w formularzu i kliknij fioletowy przycisk Zapisz. Dane zaktualizują się w historii bez powiadamiania mailem.`);
-    }
-
     function switchTab(tab) {
         document.getElementById('form-card').style.display = 'none'; 
         document.getElementById('results-card').style.display = 'none';
@@ -1346,7 +1246,7 @@ ${item.author}`;
         hist.forEach(i => {
             const shortDate = (i.departure || '').split(' ')[0] || 'Brak'; 
             const workDesc = i.workDescription || i.purpose || 'Brak';
-            const itemDistance = parseFloat(i.distance) || 0;
+            const itemDistance = i.distance !== undefined ? i.distance : 0;
             const privateC = parseFloat(i.privateCosts) || 0;
             const allowance = parseFloat(i.allowance) || 0;
             const totalSum = (allowance + privateC).toFixed(2);
@@ -1400,8 +1300,6 @@ ${item.author}`;
                                     📝 Kopiuj i wyślij jako...
                                 </button>
                                 
-                                ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
-
                                 ${emailActionHtml}
                                 
                                 <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
@@ -1458,9 +1356,7 @@ ${item.author}`;
                             locCounts[l] = (locCounts[l] || 0) + 1;
                         });
                         
-                        let dist = parseFloat(i.distance);
-                        if (isNaN(dist)) dist = 0;
-                        
+                        const dist = parseFloat(i.distance) || 0;
                         totalKm += dist;
                         
                         if (dist > 0 && i.vehicle) {
@@ -1523,9 +1419,7 @@ ${item.author}`;
                     totalTrips++;
                     
                     if (i.location) {
-                        let dist = parseFloat(i.distance);
-                        if (isNaN(dist)) dist = 0;
-                        
+                        const dist = parseFloat(i.distance) || 0;
                         globalKm += dist;
                         
                         if (i.vehicle && dist > 0) {
