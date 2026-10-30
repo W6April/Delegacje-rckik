@@ -152,6 +152,7 @@
 </div>
 
 <div class="container" id="mainContainer">
+    <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
     <header onclick="handleAdminClick()">
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
@@ -314,6 +315,10 @@
 
         <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
         <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
+        
+        <div class="app-footer">
+            Ostatnia aktualizacja: Listopad 2026
+        </div>
     </div>
 </div>
 
@@ -325,10 +330,9 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v50'; 
+    const STORAGE_KEY = 'rckik_app_data_v51'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
-    // Baza dystansów w kilometrach (W OBIE STRONY)
     const locationDistances = {
         "rckik łódź": 320,
         "rckik gdańsk": 740,
@@ -363,10 +367,13 @@
             const pin = prompt("Podaj kod administratora:");
             if(pin === "9508") {
                 isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.\nW Historii pojawiła się opcja ukrytej edycji protokołów oraz Baza Odległości.");
+                alert("🔓 Tryb Administratora odblokowany.\nW Historii pojawiła się opcja ukrytej edycji protokołów oraz Baza Odległości.\nMożesz teraz także modyfikować listę domyślnych lokalizacji.");
                 document.getElementById('btnAdminPanel').style.display = 'inline-block';
                 if (document.getElementById('history-card').style.display === 'block') {
                     renderHistory();
+                }
+                if (document.getElementById('manageLocationsBox').style.display === 'block') {
+                    renderManageLocationsList();
                 }
             } else if(pin !== null) {
                 alert("Nieprawidłowy kod.");
@@ -415,8 +422,7 @@
     function loadData() {
         let savedStr = null;
         if (!localStorage.getItem(STORAGE_KEY)) {
-            // Migracja ze starszych wersji
-            for(let v = 50; v >= 20; v--) {
+            for(let v = 52; v >= 20; v--) {
                 const fallback = localStorage.getItem('rckik_app_data_v' + v);
                 if (fallback) {
                     savedStr = fallback;
@@ -444,6 +450,24 @@
                     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
                     lastSync: saved.lastSync || 'Nigdy'
                 };
+                
+                appData.history.forEach(item => {
+                    if(item.distance === undefined) {
+                        const locs = String(item.location).split(', ');
+                        const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
+                        
+                        if(appData.distances[routeKey] !== undefined) {
+                            item.distance = appData.distances[routeKey];
+                        } else {
+                            let maxDist = 0;
+                            locs.forEach(l => {
+                                let d = appData.distances[l.trim().toLowerCase()] || 0;
+                                if(d > maxDist) maxDist = d;
+                            });
+                            item.distance = maxDist;
+                        }
+                    }
+                });
                 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
                 
@@ -534,7 +558,9 @@
         
         saveAppData(); 
         renderLocations(); 
-        renderManageLocationsList();
+        if (document.getElementById('manageLocationsBox').style.display === 'block') {
+            renderManageLocationsList();
+        }
         
         document.getElementById('locationSelect').value = val;
         document.getElementById('newLocationInput').value = '';
@@ -551,13 +577,18 @@
         container.innerHTML = '';
         
         appData.locations.forEach((loc, index) => {
+            const isDefault = defaultData.locations.some(dl => dl.toLowerCase() === loc.toLowerCase());
+            const canEdit = isAdmin || !isDefault;
+
             const item = document.createElement('div'); 
             item.className = 'manage-item';
             item.innerHTML = `
                 <span style="font-weight: 600;">${loc}</span>
                 <div style="display: flex; gap: 4px;">
-                    <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #2980b9;" onclick="renameLocation(${index})">Edytuj</button>
-                    <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #e74c3c;" onclick="deleteLocation(${index})">Usuń</button>
+                    ${canEdit ? `
+                        <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #2980b9;" onclick="renameLocation(${index})">Edytuj</button>
+                        <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #e74c3c;" onclick="deleteLocation(${index})">Usuń</button>
+                    ` : `<span style="font-size: 10px; color: #999; font-style: italic;">Domyślna (Tylko Admin)</span>`}
                 </div>
             `;
             container.appendChild(item);
@@ -621,28 +652,28 @@
             row.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <b style="font-size: 15px; color: #2c3e50;">${emp.name}</b>
-                    <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: #f1f2f6; border: 1px solid #ced6e0; border-radius: 4px; color: #555; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px;" title="${emp.hidden ? 'Przenieś do głównych' : 'Ukryj w drzewku'}">
-                        ${emp.hidden ? '⬆️ Pokaż' : '⬇️ Ukryj'}
+                    <button type="button" onclick="toggleEmployeeVisibility(${index})" style="background: transparent; border: 1px solid #ced6e0; border-radius: 4px; color: #7f8c8d; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 8px;">
+                        ${emp.hidden ? '⬆️ Pokaż na liście' : '⬇️ Ukryj'}
                     </button>
                 </div>
                 
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; width: 100%; background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e4e7eb;">
                     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                        <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; margin:0;">
+                        <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
                             <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()" style="transform: scale(1.2);"> Wypełnia
                         </label>
-                        <label style="font-size:13px; color:#34495e; cursor:pointer; display:flex; align-items:center; gap:6px; margin:0;">
+                        <label style="font-size:13px; color:#34495e; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
                             <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" style="transform: scale(1.2);"> Towarzyszy
                         </label>
                     </div>
-                    <button type="button" onclick="togglePrivateCostField(${index})" class="secondary" style="font-size: 11px; padding: 5px 12px; background:#f39c12; color:#fff; border: none; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">💸 Koszta</button>
+                    <button type="button" onclick="togglePrivateCostField(${index})" class="secondary" style="font-size: 11px; padding: 5px 10px; background:#f39c12; color:#fff; border: none; border-radius: 4px; font-weight: bold; cursor:pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">💸 Koszta</button>
                 </div>
                 
                 <div id="cost_field_${index}" style="display:none; width: 100%; margin-top: 5px; padding: 12px; background: #fffdf5; border: 1px solid #f1c40f; border-radius: 6px;">
-                    <label style="font-size:12px; color:#555; font-weight:bold; margin-bottom: 8px; display:block;">Poniesione koszty z własnych środków:</label>
+                    <label style="font-size:12px; color:#555; font-weight:bold; margin-bottom: 8px; display:block;">Poniesione koszty prywatne:</label>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <input type="number" id="cost_val_${index}" placeholder="Kwota (zł)" step="0.01" min="0" style="flex:1; min-width: 90px; padding: 8px; font-size: 14px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
-                        <input type="text" id="cost_desc_${index}" placeholder="Za co? (np. Faktura autostrada)" style="flex:2; min-width: 150px; padding: 8px; font-size: 14px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
+                        <input type="number" id="cost_val_${index}" placeholder="Kwota (zł)" step="0.01" min="0" style="flex:1; min-width: 90px; padding: 8px; font-size: 13px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
+                        <input type="text" id="cost_desc_${index}" placeholder="Za co? (np. Faktura autostrada)" style="flex:2; min-width: 140px; padding: 8px; font-size: 13px; border: 1px solid #dcdde1; border-radius:4px; margin: 0;">
                     </div>
                 </div>
             `;
@@ -721,7 +752,6 @@
         return diffMs / (1000 * 60 * 60);
     }
 
-    // NALICZANIE DIETY (Dokładnie od 12h przysługuje pełna, od 8h do 12h połowa)
     function calculateAllowance(depStr, retStr) {
         if (!depStr || !retStr) return 0;
         const totalHours = getDurationInHours(depStr, retStr);
@@ -768,7 +798,7 @@
     }
     
     function clearForm() {
-        if (confirm('Czy na pewno chcesz wyczyścić formularz?')) {
+        if (confirm('Czy na pewno chcesz wyczyścić formularz bez zapisywania?\n(Zresetuje zaznaczonych pracowników i pola tekstowe)')) {
             adminEditingId = null;
             document.getElementById('mainSubmitBtn').textContent = "Generuj i Zapisz do Dziennika (Historii)";
             document.getElementById('mainSubmitBtn').style.background = "var(--primary-color)";
@@ -855,6 +885,7 @@
         const purpose = document.getElementById('delegationPurpose').value.trim();
         const workDesc = document.getElementById('workDescription').value.trim();
         
+        // KOSZTY PRYWATNE
         let myCosts = 0;
         let myCostsDesc = '';
         const empIndex = appData.employees.findIndex(e => e.name === authorName);
@@ -875,7 +906,6 @@
         if (adminEditingId) {
             let item = appData.history.find(i => i.id === adminEditingId);
             if (item) {
-                // Zachowaj ręcznie wpisany dystans, o ile nie zmieniono fizycznie docelowych miast w edycji
                 let finalDistanceToSave = totalTripDistance;
                 if (item.location === locationStr && item.distance !== undefined && item.distance !== 0) {
                     finalDistanceToSave = item.distance;
@@ -1028,9 +1058,25 @@ ${authorName}`;
                     item.updatedAt = Date.now();
                     saveAppData();
                     renderHistory();
+                    renderStats();
                 } else {
                     alert("Wpisano błędną wartość.");
                 }
+            }
+        }
+    }
+
+    function editHistoryVehicle(id) {
+        const item = appData.history.find(i => i.id === id);
+        if (item) {
+            let current = item.vehicle || '';
+            let newVeh = prompt(`Edytujesz pojazd dla wyjazdu z dnia ${item.departure}\n\nPodaj poprawną nazwę pojazdu:`, current);
+            if (newVeh !== null && newVeh.trim() !== '') {
+                item.vehicle = newVeh.trim();
+                item.updatedAt = Date.now();
+                saveAppData();
+                renderHistory();
+                renderStats();
             }
         }
     }
@@ -1096,6 +1142,7 @@ ${authorName}`;
         });
         saveAppData();
         renderHistory();
+        renderStats();
         alert(`Operacja zakończona. Uzupełniono/przeliczono ${fixed} brakujących wpisów w Historii.`);
     }
 
@@ -1446,7 +1493,12 @@ ${item.author}`;
                     <td colspan="4">
                         <div class="details-content">
                             <b>Współuczestnicy:</b> ${i.coParticipants}<br>
-                            <b>Pojazd:</b> ${i.vehicle}<br>
+                            
+                            <div style="margin: 4px 0; display:flex; align-items:center;">
+                                <b>Pojazd:</b> &nbsp; <span>${i.vehicle}</span> 
+                                ${isAdmin ? `<button type="button" class="secondary" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; border-radius: 4px; border:none; background:#8e44ad; color:#fff;" onclick="editHistoryVehicle(${i.id})">✏️ Edytuj</button>` : ''}
+                            </div>
+                            
                             <b>Termin:</b> ${i.departure} - ${i.return}<br>
                             <b>Dieta:</b> <span class="badge" style="background:#f1f2f6; color:#333;">${allowance.toFixed(2)} zł</span><br>
                             ${privateC > 0 ? `<b>Wydatki pryw.:</b> ${privateC.toFixed(2)} zł (${i.privateCostsDesc})<br>` : ''}
@@ -1718,11 +1770,11 @@ ${item.author}`;
     }
     
     function resetToDefaults() {
-        if (confirm('Czy na pewno chcesz zresetować słowniki?')) {
+        if (confirm('Czy na pewno chcesz przywrócić listy LOKALIZACJI, POJAZDÓW i PRACOWNIKÓW do ustawień fabrycznych (domyślnych)? Znikną te dodane z ręki. Twoja historia i wpisane kilometry pozostaną bezpieczne.')) {
             appData.locations = sortLocations([...defaultData.locations]); 
             appData.vehicles = [...defaultData.vehicles]; 
             appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
-            saveAppData(); initApp(); alert('Zresetowano słowniki pomyślnie!');
+            saveAppData(); initApp(); alert('Listy zostały wyczyszczone do fabrycznych!');
         }
     }
 
