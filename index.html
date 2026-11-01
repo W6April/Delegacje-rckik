@@ -121,7 +121,6 @@
             user-select: none;
         }
 
-        /* Chłodniczo-serwisowe Animacje Tła (Boxzone) */
         @keyframes floatDownIce {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
             10% { opacity: 0.5; }
@@ -149,7 +148,6 @@
             width: 90%; max-width: 400px; text-align: center; line-height: 1.4;
         }
         
-        /* Modal dla Admina */
         .admin-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center; }
         .admin-modal-content { background:#fff; padding:20px; border-radius:8px; width:95%; max-width:600px; max-height:85vh; overflow-y:auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     </style>
@@ -158,13 +156,12 @@
 
 <div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
 
-<!-- Modal Bazy Odległości Admina -->
 <div class="admin-modal" id="adminDistModal">
     <div class="admin-modal-content">
         <h3 style="color:#8e44ad; margin-top:0; font-size: 16px; font-weight: 900; margin-bottom: 5px;">🛠 Baza Odległości (Admin)</h3>
         <p style="font-size:12px; color:#666; margin-bottom: 15px;">Zarządzaj zapisanymi kilometrami. System używa ich do liczenia statystyk.</p>
         
-        <button onclick="recalculateZeros()" style="background:#f39c12; padding:10px; font-size:13px; width:100%; margin-bottom:15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;">🔄 Uzupełnij brakujące dystanse w Historii</button>
+        <button onclick="recalculateZeros()" style="background:#f39c12; color:white; padding:10px; font-size:13px; width:100%; margin-bottom:15px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;">🔄 Uzupełnij brakujące dystanse w Historii</button>
         
         <div id="adminDistList" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;"></div>
         
@@ -172,7 +169,6 @@
     </div>
 </div>
 
-<!-- Modal Dziennik Aktywności Admina -->
 <div class="admin-modal" id="adminActivityModal">
     <div class="admin-modal-content">
         <h3 style="color:#9b59b6; margin-top:0; font-size: 16px; font-weight: 900; margin-bottom: 5px;">👁️ Dziennik Aktywności</h3>
@@ -187,9 +183,7 @@
                         <th style="padding: 6px;">Akcja</th>
                     </tr>
                 </thead>
-                <tbody id="activityLogTableBody">
-                    <!-- Logi z JS -->
-                </tbody>
+                <tbody id="activityLogTableBody"></tbody>
             </table>
         </div>
         
@@ -201,7 +195,6 @@
 </div>
 
 <div class="container" id="mainContainer">
-    <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
     <header onclick="handleAdminClick()">
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
@@ -234,7 +227,6 @@
                 <option value="">-- Brak (tylko jeden cel) --</option>
             </select>
             
-            <!-- PRZYCISK UKRYTY: Widoczny tylko dla admina -->
             <div id="manageLocsAdminBtnWrapper" style="margin-top: 10px; text-align: right; display: none;">
                 <button type="button" class="secondary" onclick="toggleManageLocations()" style="font-size: 11px; padding: 5px 10px;">⚙ Edytuj/Usuń lokalizacje</button>
             </div>
@@ -318,15 +310,35 @@
     <div class="card history-container" id="history-card">
         <h2>Historia Delegacji</h2>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px;">
-            <div>
-                <label for="filterEmployee" style="display:inline-block; font-size: 13px; margin-right: 5px;">Filtruj wg zgłaszającego:</label>
-                <select id="filterEmployee" onchange="renderHistory()" style="padding: 5px; font-size: 13px; display:inline-block; width: auto; max-width: 150px;">
-                    <option value="">Wszyscy pracownicy</option>
-                </select>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div>
+                    <select id="filterYear" onchange="renderHistory()" style="padding: 5px; font-size: 13px; width: auto;"></select>
+                </div>
+                <div>
+                    <select id="filterMonth" onchange="renderHistory()" style="padding: 5px; font-size: 13px; width: auto;">
+                        <option value="ALL">Cały rok</option>
+                        <option value="01">Styczeń</option>
+                        <option value="02">Luty</option>
+                        <option value="03">Marzec</option>
+                        <option value="04">Kwiecień</option>
+                        <option value="05">Maj</option>
+                        <option value="06">Czerwiec</option>
+                        <option value="07">Lipiec</option>
+                        <option value="08">Sierpień</option>
+                        <option value="09">Wrzesień</option>
+                        <option value="10">Październik</option>
+                        <option value="11">Listopad</option>
+                        <option value="12">Grudzień</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="filterEmployee" onchange="renderHistory()" style="padding: 5px; font-size: 13px; width: auto; max-width: 140px;">
+                        <option value="">Wszyscy pracownicy</option>
+                    </select>
+                </div>
             </div>
+            
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <!-- PRZYCISKI UKRYTE: Widoczne tylko dla admina -->
-                <button type="button" id="btnToggleChill" class="secondary" style="display: none; background-color: #2980b9; font-size: 12px; padding: 5px 10px;" onclick="toggleChillAnimations()">❄️ Animacje: ON</button>
                 <button type="button" id="btnAdminActivity" class="secondary" style="display: none; background-color: #9b59b6; font-size: 12px; padding: 5px 10px;" onclick="openActivityLog()">👁️ Dziennik</button>
                 <button type="button" id="btnAdminPanel" class="secondary" style="display: none; background-color: #8e44ad; font-size: 12px; padding: 5px 10px;" onclick="openAdminPanel()">🛠 Baza Odległości</button>
                 <button type="button" id="btnDeleteFiltered" class="secondary" style="display: none; background-color: #e67e22; font-size: 12px; padding: 5px 10px;" onclick="clearFilteredHistory()">Usuń wyfiltrowane</button>
@@ -387,8 +399,31 @@
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
 
-        <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
-        <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
+        <!-- PRZYCISKI CHMURY: Ukryte, widoczne tylko dla Administratora -->
+        <div id="cloudAdminButtons" style="display: none;">
+            <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
+            <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
+        </div>
+        
+        <!-- RAMKA Z OPISEM FUNKCJI (Widoczna tylko dla Admina) -->
+        <div id="adminInfoBox" style="display: none; border: 2px dashed #8e44ad; background: #fdfcfe; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <h3 style="color: #8e44ad; margin-top: 0; font-size: 14px; font-weight: 900;">ℹ️ Opis funkcji systemu (Panel Admina)</h3>
+            <ul style="font-size: 12px; color: #555; padding-left: 18px; margin-bottom: 12px; line-height: 1.5;">
+                <li><b>Pobierz i połącz bazę:</b> Pobiera najnowszy stan z chmury JSONBin i scala go bez ryzyka nadpisania danych kolegów.</li>
+                <li><b>Wyślij moje zmiany:</b> Wypycha Twoje lokalne wpisy (w tym poprawki i nowe trasy) do wspólnej chmury.</li>
+                <li><b>Baza Odległości:</b> Pozwala kontrolować kilometry w obie strony dla wszystkich tras.</li>
+                <li><b>Dziennik aktywności:</b> Śledzi, które urządzenie i użytkownik wykonywali operacje w systemie.</li>
+            </ul>
+        </div>
+
+        <!-- OKIENKO: CHCESZ USPRAWNIĆ APLIKACJĘ? -->
+        <div style="border: 1px solid #3498db; background: #ebf5fb; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
+            <h3 style="color: #2980b9; margin-top: 0; font-size: 14px; font-weight: 900;">💡 Chcesz usprawnić aplikację?</h3>
+            <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Masz pomysł na nową funkcję, zauważyłeś błąd lub chcesz coś zmienić?</p>
+            <a href="mailto:marekapril1984@gmail.com?subject=Usprawnienie%20aplikacji%20RCKiK%20Delegacje" class="secondary" style="display: inline-block; background-color: #2980b9; color: white; padding: 10px 18px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 13px;">
+                ✉️ Napisz do autora
+            </a>
+        </div>
         
         <div class="app-footer">
             Ostatnia aktualizacja (wersja aplikacji): 31 października 2026 (Boxzone Serwis)
@@ -405,7 +440,6 @@
     function spawnChillAnimation() {
         if (!chillEnabled) return;
         
-        // Motywy chłodnicze, lodowe i serwisowe
         const emojis = ['❄️', '🧊', '🌬️', '🔧', '🔩', '🛢️', '❄️'];
         const container = document.body;
         const el = document.createElement('div');
@@ -463,7 +497,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v58'; 
+    const STORAGE_KEY = 'rckik_app_data_v59'; 
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
     let deviceId = localStorage.getItem('rckik_device_id');
@@ -506,7 +540,10 @@
             const pin = prompt("Podaj kod administratora:");
             if(pin === "9508") {
                 isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.\nOtrzymałeś dostęp do ukrytych opcji serwisowych.");
+                alert("🔓 Tryb Administratora odblokowany.\nOtrzymałeś dostęp do opcji chmury, logów i bazy odległości.");
+                
+                try { document.getElementById('cloudAdminButtons').style.display = 'block'; } catch(e){}
+                try { document.getElementById('adminInfoBox').style.display = 'block'; } catch(e){}
                 try { document.getElementById('btnToggleChill').style.display = 'inline-block'; } catch(e){}
                 try { document.getElementById('btnAdminActivity').style.display = 'inline-block'; } catch(e){}
                 try { document.getElementById('btnAdminPanel').style.display = 'inline-block'; } catch(e){}
@@ -514,7 +551,6 @@
                 try { document.getElementById('btnClearHistoryAdmin').style.display = 'inline-block'; } catch(e){}
                 try { document.getElementById('btnAdminLogout').style.display = 'inline-block'; } catch(e){}
                 
-                // Ustaw stan przycisku animacji
                 const btnChill = document.getElementById('btnToggleChill');
                 if (btnChill) {
                     btnChill.textContent = chillEnabled ? "❄️ Animacje: ON" : "❄️ Animacje: OFF";
@@ -532,6 +568,8 @@
     function logoutAdmin() {
         isAdmin = false;
         adminEditingId = null;
+        try { document.getElementById('cloudAdminButtons').style.display = 'none'; } catch(e){}
+        try { document.getElementById('adminInfoBox').style.display = 'none'; } catch(e){}
         try { document.getElementById('btnToggleChill').style.display = 'none'; } catch(e){}
         try { document.getElementById('btnAdminActivity').style.display = 'none'; } catch(e){}
         try { document.getElementById('btnAdminPanel').style.display = 'none'; } catch(e){}
@@ -716,6 +754,7 @@
         
         populateFilterDropdown(); 
         populateStatsDates();
+        populateHistoryFilterDates();
         calculateAllowancePreview();
         updateSyncDateUI();
         
@@ -725,6 +764,31 @@
                 sessionStorage.setItem('rckik_session_logged', 'true');
             }
         } catch(e) {}
+    }
+
+    function populateHistoryFilterDates() {
+        try {
+            const yearSelect = document.getElementById('filterYear');
+            const currentYear = new Date().getFullYear();
+            let minYear = currentYear;
+            
+            appData.history.forEach(i => {
+                if (i && i.departure && typeof i.departure === 'string') {
+                    const y = parseInt(i.departure.substring(0, 4));
+                    if (!isNaN(y) && y > 2000 && y < minYear) minYear = y;
+                }
+            });
+            
+            yearSelect.innerHTML = '<option value="ALL">Wszystkie lata</option>';
+            for (let y = currentYear; y >= minYear; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+            yearSelect.value = "ALL";
+            document.getElementById('filterMonth').value = "ALL";
+        } catch (e) {}
     }
     
     function populateStatsDates() {
@@ -748,8 +812,9 @@
                 yearSelect.appendChild(opt);
             }
             
-            const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
-            document.getElementById('statsMonth').value = currentMonth;
+            // Domyślnie obecny rok i "Cały rok"
+            yearSelect.value = currentYear;
+            document.getElementById('statsMonth').value = "ALL";
         } catch (e) {}
     }
 
@@ -905,6 +970,27 @@
         if (field) field.style.display = field.style.display === 'block' ? 'none' : 'block';
     }
 
+    // INTELIGENTNE WYKRYWANJE UŻYTKOWNIKA NA BAZIE MINIMUM 2 HISTORII
+    function getGuessedDefaultAuthor() {
+        try {
+            let counts = {};
+            appData.history.forEach(i => {
+                if (i && i.author) {
+                    counts[i.author] = (counts[i.author] || 0) + 1;
+                }
+            });
+            let bestCandidate = "";
+            let maxCount = 0;
+            Object.keys(counts).forEach(name => {
+                if (counts[name] >= 2 && counts[name] > maxCount) {
+                    maxCount = counts[name];
+                    bestCandidate = name;
+                }
+            });
+            return bestCandidate;
+        } catch(e) { return ""; }
+    }
+
     function renderEmployees() {
         try {
             const mainContainer = document.getElementById('mainParticipantsList'); 
@@ -914,7 +1000,17 @@
             mainContainer.innerHTML = '';
             hiddenContainer.innerHTML = '';
 
+            const guessedAuthor = getGuessedDefaultAuthor();
+            let authorSelectedYet = false;
+
             appData.employees.forEach((emp, index) => {
+                // Jeśli jeszcze nic nie zaznaczono i ten pracownik ma >= 2 wyjazdy w historii, zaznacz domyślnie
+                let shouldCheck = false;
+                if (!authorSelectedYet && guessedAuthor && emp.name === guessedAuthor) {
+                    shouldCheck = true;
+                    authorSelectedYet = true;
+                }
+
                 const row = document.createElement('div'); 
                 row.className = 'participant-row';
                 row.innerHTML = `
@@ -928,7 +1024,7 @@
                     <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; width: 100%; background: #f8f9fa; padding: 8px; border-radius: 6px; border: 1px solid #e4e7eb;">
                         <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                             <label style="font-size:13px; color:#c0392b; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
-                                <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()" style="transform: scale(1.2);"> Wypełnia
+                                <input type="radio" name="authorRadio" value="${emp.name}" onchange="updateParticipantRoles()" ${shouldCheck ? 'checked' : ''} style="transform: scale(1.2);"> Wypełnia
                             </label>
                             <label style="font-size:13px; color:#34495e; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px; margin:0;">
                                 <input type="checkbox" name="coParticipantCheckbox" value="${emp.name}" style="transform: scale(1.2);"> Towarzyszy
@@ -1091,12 +1187,7 @@
             document.getElementById('delegationPurpose').value = '';
             document.getElementById('workDescription').value = '';
             
-            document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
-            document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-                cb.checked = false;
-                cb.disabled = false;
-                cb.parentElement.style.opacity = '1';
-            });
+            renderEmployees(); // odświeży domyślne zaznaczenie
             
             appData.employees.forEach((emp, index) => {
                 const cVal = document.getElementById('cost_val_' + index);
@@ -1164,7 +1255,6 @@
         const formattedDeparture = departure.replace('T', ' ');
         const formattedReturn = returnT.replace('T', ' ');
         
-        // ZAPISZ UŻYTKOWNIKA DO CELÓW LOGÓW
         try { localStorage.setItem('rckik_device_user', authorName); } catch(e){}
 
         const coParts = Array.from(document.querySelectorAll('input[name="coParticipantCheckbox"]:checked')).map(cb => cb.value).join(', ') || 'brak';
@@ -1738,14 +1828,32 @@ ${item.author}`;
         
         try {
             const filterEmp = document.getElementById('filterEmployee').value;
+            const filterYear = document.getElementById('filterYear').value;
+            const filterMonth = document.getElementById('filterMonth').value;
             
             let hist = appData.history;
             if (filterEmp) {
                 hist = hist.filter(i => i.author === filterEmp);
             }
             
+            if (filterYear && filterYear !== 'ALL') {
+                hist = hist.filter(i => i.departure && i.departure.startsWith(filterYear));
+            }
+
+            if (filterMonth && filterMonth !== 'ALL') {
+                hist = hist.filter(i => {
+                    if (!i.departure) return false;
+                    // format daty: YYYY-MM-DD HH:mm lub YYYY-MM-DDTHH:mm
+                    let parts = i.departure.split(/[- :T]/);
+                    if (parts.length >= 2) {
+                        return parts[1] === filterMonth;
+                    }
+                    return false;
+                });
+            }
+            
             if (hist.length === 0) {
-                container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii do wyświetlenia.</p>';
+                container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii spełniającej kryteria wyszukiwania.</p>';
                 return;
             }
 
@@ -1804,7 +1912,7 @@ ${item.author}`;
                                 
                                 <div style="margin: 8px 0; display:flex; align-items:center;">
                                     <b>Dystans:</b> &nbsp; <span class="badge" style="background:#e8f8f5; color:#0e6655;">${itemDistance} km</span> 
-                                    ${isAdmin ? `<button type="button" class="secondary" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; border-radius: 4px; border:none; background:#8e44ad; color:#fff;" onclick="editHistoryDistance(${i.id})">✏️ Edytuj</button>` : ''}
+                                    ${isAdmin ? `<button type="button" class="secondary" style="font-size: 10px; padding: 2px 6px; margin-left: 8px; border-radius: 4px; border:none; background:#7f8c8d; color:#fff;" onclick="editHistoryDistance(${i.id})">✏️ Edytuj</button>` : ''}
                                 </div>
                                 
                                 <hr style="border: 0; border-top: 1px dashed #e1e1e1; margin: 8px 0;">
@@ -2168,7 +2276,7 @@ ${item.author}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 
-                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates();
+                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 if (document.getElementById('stats-card').style.display === 'block') renderStats();
                 
@@ -2197,7 +2305,7 @@ ${item.author}`;
                     appData.lastSync = new Date().toLocaleString();
                     saveAppData(); 
                     
-                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); updateSyncDateUI();
+                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
                     if (document.getElementById('stats-card').style.display === 'block') renderStats();
                     
