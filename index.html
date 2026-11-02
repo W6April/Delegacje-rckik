@@ -354,7 +354,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v64 (Pancerna Synchronizacja)
+            Wersja Systemu: v65 (Dodano funkcję usuwania i poprawiono blokady synchronizacji)
         </div>
     </div>
 
@@ -526,7 +526,7 @@
     const STORAGE_KEY = 'rckik_app_data_v64'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
-    let isSyncing = false; // MUTEX BLOCK ZABEZPIECZAJACY
+    let isSyncing = false; // BLOKADA SYNCHRONIZACJI
 
     let deviceId = localStorage.getItem('rckik_device_id');
     if(!deviceId) {
@@ -1509,6 +1509,22 @@ ${i.author}`;
     }
 
     // ==========================================
+    // DODANA FUNKCJA USUWANIA POJEDYNCZEGO PROTOKOŁU
+    // ==========================================
+    function deleteProtocol(id) {
+        if(confirm("Czy NA PEWNO chcesz usunąć ten protokół z dziennika?\nTej operacji nie można cofnąć. Zostanie on bezpowrotnie usunięty również z chmury i z urządzeń pozostałych użytkowników przy najbliższej synchronizacji.")) {
+            if (!appData.deletedIds) appData.deletedIds = [];
+            appData.deletedIds.push(id);
+            appData.history = appData.history.filter(i => i.id !== id);
+            logActivity(`Usunięto pojedynczy protokół ze spisu`);
+            saveAppData();
+            renderHistory();
+            uploadToCloud(true); // Aktualizacja w chmurze (roześle usunięcie do kolegów)
+            alert("Protokół został pomyślnie usunięty.");
+        }
+    }
+
+    // ==========================================
     // GENEROWANIE PROTOKOŁU (Główna Funkcja)
     // ==========================================
     function generateProtocols() {
@@ -1885,18 +1901,24 @@ ${authorName}`;
                             
                             <hr style="border: 0; border-top: 1px solid #e1e1e1; margin: 12px 0;">
                             
-                            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
                                 
                                 <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: ${i.settled ? '#27ae60' : '#e67e22'};">
                                     <input type="checkbox" style="transform: scale(1.4);" onchange="toggleSettled(${i.id}, this.checked)" ${i.settled ? 'checked' : ''}>
                                     Rozliczono
                                 </label>
                                 
-                                <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
-                                    📝 Kopiuj i wyślij jako...
-                                </button>
-                                
-                                ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
+                                        📝 Kopiuj
+                                    </button>
+                                    
+                                    ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
+                                    
+                                    <button type="button" class="secondary" style="background: #c0392b; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="deleteProtocol(${i.id})">
+                                        🗑 Usuń
+                                    </button>
+                                </div>
 
                                 ${emailActionHtml}
                             </div>
@@ -2122,7 +2144,7 @@ ${authorName}`;
     }
 
     // ==========================================
-    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE)
+    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY)
     // ==========================================
 
     function createBackup() {
@@ -2143,7 +2165,7 @@ ${authorName}`;
         // 2. Inteligentne łączenie Historii (Protokołów)
         let mergedHistoryMap = new Map();
         
-        // Dodaj lokalne wpisy
+        // Dodaj lokalne wpisy (pomijając całkowicie te usunięte)
         (appData.history || []).forEach(item => {
             if (!appData.deletedIds.includes(item.id)) {
                 mergedHistoryMap.set(item.id, item);
@@ -2153,7 +2175,7 @@ ${authorName}`;
         // Nałóż wpisy z chmury (nadpisz lokalne tylko jeśli te w chmurze są nowsze)
         if (Array.isArray(cloudData.history)) {
             cloudData.history.forEach(cloudItem => {
-                if (appData.deletedIds.includes(cloudItem.id)) return;
+                if (appData.deletedIds.includes(cloudItem.id)) return; // Pomijamy usunięte w chmurze
                 
                 let localItem = mergedHistoryMap.get(cloudItem.id);
                 if (localItem) {
@@ -2213,10 +2235,13 @@ ${authorName}`;
     }
 
     async function uploadToCloud(silent = false) {
-        if (isSyncing) {
-            console.log("Synchronizacja trwa, pominięto podwójne wywołanie.");
-            return;
+        let waitLoops = 0;
+        // Zamiast odrzucać od razu (return), czekamy aż inna synchronizacja się zakończy (maks ok. 10 sek.)
+        while (isSyncing && waitLoops < 20) {
+            await new Promise(r => setTimeout(r, 500));
+            waitLoops++;
         }
+        
         isSyncing = true;
         
         const btn = document.getElementById('btnUploadCloud');
@@ -2238,7 +2263,7 @@ ${authorName}`;
                 throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
             }
 
-            // 2. Wysyłamy nadpisany (scaliowany) plik z blokadą wersjonowania (X-Bin-Versioning)
+            // 2. Wysyłamy nadpisany (scaliowany) plik z blokadą wersjonowania
             const payload = {
                 locations: appData.locations,
                 vehicles: appData.vehicles,
@@ -2255,7 +2280,7 @@ ${authorName}`;
                 headers: { 
                     'Content-Type': 'application/json', 
                     'X-Master-Key': CLOUD_API_KEY,
-                    'X-Bin-Versioning': 'false' // BLOKUJE TWORZENIE ZBĘDNYCH WERSJI LIMITUJĄCYCH DARMOWE KONTO
+                    'X-Bin-Versioning': 'false' 
                 },
                 body: JSON.stringify(payload)
             });
@@ -2281,18 +2306,27 @@ ${authorName}`;
             }
         } catch(err) { 
             console.error("Błąd zapisu w chmurze:", err);
+            try { 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px; color: red;">BŁĄD WYSYŁANIA</b>`; 
+            } catch(e){}
+            
             if (!silent) {
                 logActivity(`Błąd chmury (zapis): ${err.message}`);
                 alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
             }
         } finally {
             if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
-            isSyncing = false; // Zwolnienie blokady
+            isSyncing = false; // Zwolnienie blokady KOLEJKI ZAPISÓW
         }
     }
 
     async function downloadFromCloud(silent = false) {
-        if (isSyncing) return;
+        let waitLoops = 0;
+        while (isSyncing && waitLoops < 20) {
+            await new Promise(r => setTimeout(r, 500));
+            waitLoops++;
+        }
+        
         isSyncing = true;
 
         const btn = document.getElementById('btnDownloadCloud');
@@ -2329,6 +2363,10 @@ ${authorName}`;
             }
         } catch(err) { 
             console.error("Błąd pobierania z chmury:", err);
+            try { 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px; color: red;">BŁĄD POBIERANIA</b>`; 
+            } catch(e){}
+            
             if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
         } finally {
             if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
