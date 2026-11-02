@@ -68,7 +68,7 @@
         .participant-row { display: flex; flex-direction: column; background: #ffffff; padding: 12px; border: 1px solid #e1e1e1; border-radius: 8px; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
 
         .btn-submit { width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; border-radius: 6px; box-shadow: 0 4px 6px rgba(192, 57, 43, 0.2); }
-        .results-container, .history-container, .cloud-container, .stats-container { display: none; }
+        .results-container, .history-container, .cloud-container, .stats-container, .vehicles-container { display: none; }
 
         .email-preview { background: #fff; border: 1px solid var(--border-color); border-left: 5px solid var(--primary-color); padding: 18px; margin-bottom: 15px; border-radius: 4px; }
         .email-header { font-weight: bold; color: #2c3e50; margin-bottom: 12px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
@@ -88,6 +88,7 @@
         .nav-tabs { display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap; }
         .nav-tabs button { flex: 1; background: #e4e7eb; color: #333; padding: 10px 5px; font-size: 13px; min-width: 80px;}
         .nav-tabs button.active { background: var(--primary-color); color: white; }
+        #tabVehiclesBtn.active { background: #8e44ad !important; color: white !important; }
 
         .app-footer { text-align: center; margin-top: 25px; font-size: 12px; color: #888; border-top: 1px dashed #ccc; padding-top: 15px; }
         
@@ -231,6 +232,7 @@
 </div>
 
 <div class="container" id="mainContainer">
+    <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
     <header onclick="handleAdminClick()">
         <h1>RCKiK Delegacje</h1>
         <p>System rozliczania podróży służbowych i zarządzania protokołami</p>
@@ -241,6 +243,8 @@
         <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia</button>
         <button type="button" id="tabStatsBtn" onclick="switchTab('stats')">📊 Statystyki</button>
         <button type="button" id="tabCloudBtn" onclick="switchTab('cloud')">☁️ Chmura</button>
+        <!-- KARTA ADMINA: POJAZDY -->
+        <button type="button" id="tabVehiclesBtn" style="display: none; background-color: #8e44ad; color: white;" onclick="switchTab('vehicles')">🚗 Pojazdy</button>
     </div>
 
     <!-- FORMULARZ DELEGACJI -->
@@ -424,6 +428,19 @@
         <div id="statsResults"></div>
     </div>
 
+    <!-- POJAZDY (ADMIN) -->
+    <div class="card vehicles-container" id="vehicles-card">
+        <h2 style="color: #8e44ad;">🚗 Zarządzanie Pojazdami (Admin)</h2>
+        <p style="font-size: 13px; color: #555; margin-bottom: 20px;">Edytuj i usuwaj pojazdy z bazy słownikowej. Zmiany są automatycznie synchronizowane do chmury dla wszystkich pracowników.</p>
+        
+        <div class="inline-add" style="margin-bottom: 20px;">
+            <input type="text" id="adminNewVehicleInput" placeholder="Nowy samochód (Marka, Nr rej)">
+            <button type="button" onclick="adminAddVehicle()" style="background: #8e44ad;">Dodaj pojazd</button>
+        </div>
+        
+        <div id="adminVehiclesList" class="manage-box" style="display: block;"></div>
+    </div>
+
     <!-- CHMURA -->
     <div class="card cloud-container" id="cloud-card">
         <h2>☁️ Baza Współdzielona</h2>
@@ -445,7 +462,7 @@
             <h3 style="color: #8e44ad; margin-top: 0; font-size: 14px; font-weight: 900;">ℹ️ Opis funkcji systemu (Panel Admina)</h3>
             <ul style="font-size: 12px; color: #555; padding-left: 18px; margin-bottom: 12px; line-height: 1.5;">
                 <li><b>Pobierz i połącz bazę:</b> Pobiera najnowszy stan z chmury JSONBin i scala go bez ryzyka nadpisania danych kolegów.</li>
-                <li><b>Wyślij moje zmiany:</b> Wypycha Twoje lokalne wpisy (w tym poprawki i nowe trasy) do wspólnej chmury.</li>
+                <li><b>Wyślij moje zmiany:</b> Wypycha Twoje lokalne wpisy do wspólnej chmury (auto-sync robi to w tle dla edycji słowników).</li>
                 <li><b>Baza Odległości:</b> Kontrola kilometrów w obie strony dla tras oraz funkcja automatycznego przeliczania zaległości.</li>
                 <li><b>Dziennik aktywności:</b> Rejestr urządzeń i działań użytkowników w systemie.</li>
                 <li><b>Zarządzanie animacjami:</b> Niezależne włączanie/wyłączanie deszczu pieniędzy, śniegu, wiaderek i szczotek.</li>
@@ -461,7 +478,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v61 (Synchronizacja JSONBin)
+            Ostatnia aktualizacja (wersja aplikacji): Listopad 2026 (v62)
         </div>
     </div>
 </div>
@@ -573,7 +590,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v61'; 
+    const STORAGE_KEY = 'rckik_app_data_v62'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
@@ -617,7 +634,7 @@
             const pin = prompt("Podaj kod administratora:");
             if(pin === "9508") {
                 isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.\nDostęp do bazy odległości, animacji, dziennika i chmury aktywny.");
+                alert("🔓 Tryb Administratora odblokowany.\nDostęp do bazy odległości, zarządzania pojazdami i innych opcji aktywny.");
                 
                 try { document.getElementById('cloudAdminButtons').style.display = 'block'; } catch(e){}
                 try { document.getElementById('adminInfoBox').style.display = 'block'; } catch(e){}
@@ -627,6 +644,7 @@
                 try { document.getElementById('manageLocsAdminBtnWrapper').style.display = 'block'; } catch(e){}
                 try { document.getElementById('btnClearHistoryAdmin').style.display = 'inline-block'; } catch(e){}
                 try { document.getElementById('btnAdminLogout').style.display = 'inline-block'; } catch(e){}
+                try { document.getElementById('tabVehiclesBtn').style.display = 'inline-block'; } catch(e){}
 
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 if (document.getElementById('manageLocationsBox').style.display === 'block') renderManageLocationsList();
@@ -647,6 +665,7 @@
         try { document.getElementById('manageLocsAdminBtnWrapper').style.display = 'none'; } catch(e){}
         try { document.getElementById('btnClearHistoryAdmin').style.display = 'none'; } catch(e){}
         try { document.getElementById('btnAdminLogout').style.display = 'none'; } catch(e){}
+        try { document.getElementById('tabVehiclesBtn').style.display = 'none'; } catch(e){}
         
         try {
             const btnSubmit = document.getElementById('mainSubmitBtn');
@@ -655,6 +674,12 @@
         } catch(e){}
         
         alert("🔒 Wylogowano z trybu Administratora.");
+        
+        // Zabezpieczenie przed zablokowaniem w schowanej zakładce pojazdów
+        const vehCard = document.getElementById('vehicles-card');
+        if (vehCard && vehCard.style.display === 'block') {
+            switchTab('form');
+        }
         
         if (document.getElementById('history-card').style.display === 'block') renderHistory();
         if (document.getElementById('manageLocationsBox').style.display === 'block') toggleManageLocations();
@@ -706,6 +731,7 @@
             appData.activityLogs = [];
             saveAppData();
             openActivityLog();
+            uploadToCloud(true);
         }
     }
 
@@ -720,6 +746,10 @@
             return aStr.localeCompare(bStr, 'pl');
         });
     }
+    
+    function sortVehicles(vehs) {
+        return vehs.filter(v => typeof v === 'string').sort((a, b) => a.localeCompare(b, 'pl'));
+    }
 
     const defaultData = {
         locations: sortLocations([
@@ -727,10 +757,10 @@
             "RCKiK Kielce", "RCKiK Łódź", "RCKiK Olsztyn", "RCKiK Rzeszów", 
             "RCKiK Szczecin", "RCKiK Wrocław", "WCKiK Gdańsk", "WCKiK Wrocław"
         ]),
-        vehicles: [
+        vehicles: sortVehicles([
             "Opel Movano (WU 4395R)", "Renault Master (WU 4724L)",
             "Skoda Octavia (WU 4086P)", "Skoda Octavia (Ignacy)", "Toyota Proace (Miros)"
-        ],
+        ]),
         employees: [
             { name: "Bartosz Miller", email: DEFAULT_MANAGER_EMAIL, hidden: false },
             { name: "Marek Kwiecień", email: DEFAULT_MANAGER_EMAIL, hidden: false },
@@ -753,7 +783,7 @@
     function loadData() {
         let savedStr = null;
         if (!localStorage.getItem(STORAGE_KEY)) {
-            for(let v = 60; v >= 20; v--) {
+            for(let v = 65; v >= 20; v--) {
                 const fallback = localStorage.getItem('rckik_app_data_v' + v);
                 if (fallback) {
                     savedStr = fallback;
@@ -783,6 +813,9 @@
                     lastSync: saved.lastSync || 'Nigdy'
                 };
                 
+                appData.vehicles = sortVehicles(appData.vehicles);
+                
+                // Ochrona przed uszkodzonymi elementami historii
                 appData.history.forEach(item => {
                     if (item && item.location && (item.distance === undefined || isNaN(parseFloat(item.distance)) || parseFloat(item.distance) <= 0)) {
                         const locs = String(item.location).split(', ');
@@ -802,6 +835,7 @@
                 });
                 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                
             } else {
                 appData = JSON.parse(JSON.stringify(defaultData));
             }
@@ -814,29 +848,6 @@
     loadData();
 
     function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
-
-    function createBackup() {
-        if(appData && appData.locations) {
-            localStorage.setItem(BACKUP_KEY, JSON.stringify(appData));
-        }
-    }
-
-    function restoreBackup() {
-        const pin = prompt("Podaj kod PIN, aby przywrócić poprzedni stan bazy (sprzed ostatniej synchronizacji):");
-        if (pin === "9508") {
-            const backupStr = localStorage.getItem(BACKUP_KEY);
-            if (backupStr) {
-                localStorage.setItem(STORAGE_KEY, backupStr);
-                loadData();
-                initApp();
-                alert("Przywrócono poprzedni stan danych pomyślnie!");
-            } else {
-                alert("Brak kopii zapasowej do przywrócenia.");
-            }
-        } else if (pin !== null) {
-            alert("Nieprawidłowy kod PIN.");
-        }
-    }
 
     function initApp() {
         renderLocations(); renderVehicles(); renderEmployees(); 
@@ -984,6 +995,7 @@
         
         document.getElementById('locationSelect').value = val;
         document.getElementById('newLocationInput').value = '';
+        uploadToCloud(true);
     }
 
     function toggleManageLocations() {
@@ -1030,6 +1042,7 @@
             saveAppData(); 
             renderLocations(); 
             renderManageLocationsList();
+            uploadToCloud(true);
         }
     }
 
@@ -1041,9 +1054,11 @@
             saveAppData();
             renderLocations();
             renderManageLocationsList();
+            uploadToCloud(true);
         }
     }
 
+    // POJAZDY
     function renderVehicles() {
         try {
             const select = document.getElementById('vehicleSelect'); if (!select) return;
@@ -1057,6 +1072,80 @@
         } catch(e) {}
     }
 
+    function addVehicle() {
+        const val = document.getElementById('newVehicleInput').value.trim();
+        if (!val) return alert('Wpisz dane samochodu.');
+        if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        appData.vehicles.push(val); 
+        appData.vehicles = sortVehicles(appData.vehicles);
+        logActivity(`Dodano nowy pojazd do słownika: ${val}`);
+        saveAppData(); 
+        renderVehicles(); 
+        document.getElementById('newVehicleInput').value = '';
+        uploadToCloud(true);
+    }
+    
+    // Nowe opcje w trybie Admin - Zakładka Pojazdy
+    function adminAddVehicle() {
+        const val = document.getElementById('adminNewVehicleInput').value.trim();
+        if (!val) return alert('Wpisz dane samochodu.');
+        if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        appData.vehicles.push(val); 
+        appData.vehicles = sortVehicles(appData.vehicles);
+        logActivity(`(Admin) Dodano nowy pojazd do słownika: ${val}`);
+        saveAppData(); 
+        renderVehicles(); 
+        renderAdminVehiclesList();
+        document.getElementById('adminNewVehicleInput').value = '';
+        uploadToCloud(true);
+    }
+
+    function renameVehicle(index) {
+        const oldName = appData.vehicles[index];
+        const newName = prompt('Podaj nową nazwę dla pojazdu:', oldName);
+        if (newName && newName.trim() !== '' && newName !== oldName) {
+            appData.vehicles[index] = newName.trim();
+            appData.vehicles = sortVehicles(appData.vehicles);
+            logActivity(`(Admin) Zmieniono nazwę pojazdu z ${oldName} na ${newName.trim()}`);
+            saveAppData(); 
+            renderVehicles(); 
+            renderAdminVehiclesList();
+            uploadToCloud(true);
+        }
+    }
+
+    function deleteVehicle(index) {
+        const veh = appData.vehicles[index];
+        if (confirm(`Czy na pewno chcesz usunąć pojazd '${veh}' ze słownika? (Nie usunie to starych raportów).`)) {
+            appData.vehicles.splice(index, 1);
+            logActivity(`(Admin) Usunięto pojazd ze słownika: ${veh}`);
+            saveAppData();
+            renderVehicles();
+            renderAdminVehiclesList();
+            uploadToCloud(true);
+        }
+    }
+
+    function renderAdminVehiclesList() {
+        const container = document.getElementById('adminVehiclesList');
+        if (!container) return;
+        container.innerHTML = '';
+        
+        appData.vehicles.forEach((veh, index) => {
+            const item = document.createElement('div'); 
+            item.className = 'manage-item';
+            item.innerHTML = `
+                <span style="font-weight: 600;">${veh}</span>
+                <div style="display: flex; gap: 4px;">
+                    <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #2980b9;" onclick="renameVehicle(${index})">Edytuj</button>
+                    <button type="button" class="secondary" style="font-size:11px; padding: 4px 8px; background: #e74c3c;" onclick="deleteVehicle(${index})">Usuń</button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    // PRACOWNICY
     function togglePrivateCostField(index) {
         const field = document.getElementById('cost_field_' + index);
         if (field) field.style.display = field.style.display === 'block' ? 'none' : 'block';
@@ -1187,15 +1276,6 @@
                 selStats.value = currentStatsVal;
             }
         } catch (e){}
-    }
-
-    function addVehicle() {
-        const val = document.getElementById('newVehicleInput').value.trim();
-        if (!val) return alert('Wpisz dane samochodu.');
-        if (appData.vehicles.includes(val)) return alert('Taki samochód już istnieje.');
-        appData.vehicles.push(val); 
-        logActivity(`Dodano nowy pojazd do słownika: ${val}`);
-        saveAppData(); renderVehicles(); document.getElementById('newVehicleInput').value = '';
     }
 
     function addEmployee() {
@@ -1368,7 +1448,7 @@
         const durationStr = calculateDurationString(departure, returnT);
         const totalAmountToReturn = allowanceAmount + myCosts;
 
-        // Tryb administratora (edycja)
+        // -- TRYB ADMINISTRATORA (EDYCJA) --
         if (adminEditingId) {
             let item = appData.history.find(i => i.id === adminEditingId);
             if (item) {
@@ -1394,6 +1474,8 @@
                 logActivity(`(Admin) Edytowano protokół wyjazdu (${locationStr})`);
                 
                 saveAppData();
+                uploadToCloud(true); // Autozapis admina
+                
                 adminEditingId = null;
                 const btnSubmit = document.getElementById('mainSubmitBtn');
                 btnSubmit.textContent = "Generuj i Zapisz do Dziennika (Historii)";
@@ -1404,6 +1486,7 @@
                 return;
             }
         }
+        // ----------------------------------
 
         const duplicateIndex = appData.history.findIndex(item => 
             item.author === authorName && 
@@ -1517,353 +1600,6 @@ ${authorName}`;
         switchTab('results');
     }
 
-    function editHistoryDistance(id) {
-        const item = appData.history.find(i => i.id === id);
-        if (item) {
-            let current = item.distance || 0;
-            let newDist = prompt(`Edytujesz dystans dla wyjazdu: ${item.location}\n\nPodaj poprawny całkowity dystans (w obie strony) w kilometrach:`, current);
-            if (newDist !== null && newDist.trim() !== '') {
-                let parsed = parseFloat(newDist.replace(',', '.'));
-                if (!isNaN(parsed)) {
-                    item.distance = parsed;
-                    item.updatedAt = Date.now();
-                    logActivity(`(Admin) Edytowano ręcznie kilometry w historii dla: ${item.location}`);
-                    saveAppData();
-                    renderHistory();
-                } else {
-                    alert("Wpisano błędną wartość.");
-                }
-            }
-        }
-    }
-    
-    function editHistoryVehicle(id) {
-        const item = appData.history.find(i => i.id === id);
-        if (item) {
-            let current = item.vehicle || '';
-            let newVeh = prompt(`Edytujesz pojazd dla wyjazdu z dnia ${item.departure}\n\nPodaj poprawną nazwę pojazdu:`, current);
-            if (newVeh !== null && newVeh.trim() !== '') {
-                item.vehicle = newVeh.trim();
-                item.updatedAt = Date.now();
-                saveAppData();
-                renderHistory();
-            }
-        }
-    }
-
-    function openAdminPanel() {
-        document.getElementById('adminDistModal').style.display = 'flex';
-        renderAdminDistList();
-    }
-
-    function renderAdminDistList() {
-        const container = document.getElementById('adminDistList');
-        container.innerHTML = '';
-        
-        const sortedKeys = Object.keys(appData.distances).sort((a,b) => a.localeCompare(b));
-        sortedKeys.forEach(k => {
-            const val = appData.distances[k];
-            const div = document.createElement('div');
-            div.style.cssText = "display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding:5px 0;";
-            div.innerHTML = `
-                <span style="font-size:12px; font-weight:600; text-transform:uppercase;">${k}</span>
-                <div>
-                    <span style="font-size:12px; color:#8e44ad; font-weight:bold; margin-right:8px;">${val} km</span>
-                    <button onclick="editAdminDist('${k}')" style="background:#bdc3c7; color:#333; padding:4px 8px; font-size:10px; border:none; border-radius:4px; cursor:pointer;">✏️ Edytuj</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function editAdminDist(key) {
-        const current = appData.distances[key];
-        const newDist = prompt(`Edytuj dystans W OBIE STRONY dla "${key}":`, current);
-        if (newDist !== null && newDist.trim() !== '') {
-            const parsed = parseFloat(newDist.replace(',', '.'));
-            if (!isNaN(parsed)) {
-                appData.distances[key] = parsed;
-                logActivity(`(Admin) Edytowano dystans w bazie dla: ${key}`);
-                saveAppData();
-                renderAdminDistList();
-            }
-        }
-    }
-
-    function recalculateZeros() {
-        let fixed = 0;
-        appData.history.forEach(item => {
-            let dist = parseFloat(item.distance);
-            if(isNaN(dist) || dist <= 0) {
-                const locs = String(item.location || '').split(', ');
-                const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
-                
-                if(appData.distances[routeKey] !== undefined) {
-                    item.distance = appData.distances[routeKey];
-                } else {
-                    let maxDist = 0;
-                    locs.forEach(l => {
-                        let distForLoc = appData.distances[l.trim().toLowerCase()] || 0;
-                        if(distForLoc > maxDist) maxDist = distForLoc;
-                    });
-                    item.distance = maxDist;
-                }
-                fixed++;
-            }
-        });
-        
-        logActivity(`(Admin) Uruchomiono masowe przeliczanie pustych dystansów w historii (naprawiono: ${fixed})`);
-        saveAppData();
-        renderHistory();
-        renderStats();
-        alert(`Operacja zakończona. Uzupełniono/przeliczono ${fixed} brakujących wpisów w Historii.`);
-    }
-
-    function copyToClipboard(btn) {
-        navigator.clipboard.writeText(decodeURIComponent(btn.getAttribute('data-text'))).then(() => {
-            const org = btn.textContent; btn.textContent = 'Skopiowano! ✓'; btn.style.backgroundColor = '#27ae60';
-            setTimeout(() => { btn.textContent = org; btn.style.backgroundColor = ''; }, 2000);
-        });
-    }
-    
-    function showMoneyAnimation() {
-        if (!animSettings.money) return;
-        const emojis = ['💰', '💵', '🪙', '💸'];
-        for (let i = 0; i < 40; i++) {
-            const drop = document.createElement('div');
-            drop.className = 'money-drop';
-            drop.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            drop.style.left = Math.random() * 100 + 'vw';
-            drop.style.animationDuration = (Math.random() * 2 + 2) + 's';
-            drop.style.animationDelay = (Math.random() * 0.5) + 's';
-            drop.style.fontSize = (Math.random() * 20 + 20) + 'px';
-            document.body.appendChild(drop);
-            
-            setTimeout(() => drop.remove(), 4500);
-        }
-    }
-
-    function showAlertToast() {
-        const toast = document.getElementById('alertToast');
-        if (toast) {
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 5000);
-        }
-    }
-
-    function syncAfterEmail(id, hasCosts = false) {
-        if(id) {
-            const item = appData.history.find(i => i.id === id);
-            if(item) {
-                item.isSent = true;
-                item.updatedAt = Date.now();
-                saveAppData();
-            }
-        }
-        
-        if(hasCosts) showAlertToast();
-        
-        showMoneyAnimation();
-        setTimeout(() => {
-            uploadToCloud();
-        }, 1200);
-    }
-
-    function sendEmailFromHistory(id) {
-        const item = appData.history.find(i => i.id === id);
-        if(!item) return;
-
-        const durationStr = calculateDurationString(item.departure, item.return);
-        const emailSubject = `${item.location} - ${item.author}`;
-        
-        const myCosts = parseFloat(item.privateCosts) || 0;
-        const totalAmountToReturn = parseFloat(item.allowance) + myCosts;
-        const distToPrint = parseFloat(item.distance) || 0;
-        
-        let emailBody = `Szanowny Panie Kierowniku,
-
-Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
-
-• Zgłaszający (wypełniający):
-  ${item.author}
-
-• Współuczestnicy:
-  ${item.coParticipants}
-
-• Lokalizacja docelowa:
-  ${item.location}
-
-• Pojazd:
-  ${item.vehicle}
-
-• Przejechany dystans (w obie strony):
-  ${distToPrint} km
-
-• Termin wyjazdu:
-  ${item.departure}
-
-• Termin powrotu:
-  ${item.return}
-
-• Łączny czas trwania:
-  ${durationStr}
-
-• Cel delegacji:
-  ${item.purpose}
-
-• Opis wykonanej pracy:
-  ${item.workDescription || 'Brak'}
-
-• Należna dieta krajowa:
-  ${item.allowance} PLN`;
-
-        if (myCosts > 0) {
-            emailBody += `\n\n• Poniesione koszty z własnych środków:
-  ${myCosts.toFixed(2)} PLN (${item.privateCostsDesc || 'Brak opisu'})`;
-        }
-        
-        emailBody += `\n\n• Łączna kwota do zwrotu:
-  ${totalAmountToReturn.toFixed(2)} PLN
-
-Z poważaniem,
-${item.author}`;
-
-        window.open(`mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`, '_blank');
-        
-        item.isSent = true;
-        item.updatedAt = Date.now();
-        
-        logActivity(`Wysłano e-mail z historii (${item.location})`);
-        saveAppData();
-        
-        renderHistory();
-        syncAfterEmail(null, myCosts > 0); 
-    }
-
-    function copyToForm(id) {
-        const item = appData.history.find(i => i.id === id);
-        if (!item) return;
-        
-        const locs = item.location ? String(item.location).split(', ') : [];
-        const locSelect = document.getElementById('locationSelect');
-        const locSelect2 = document.getElementById('locationSelect2');
-        
-        if (locs.length > 0 && [...locSelect.options].some(o => o.value === locs[0])) {
-            locSelect.value = locs[0];
-        }
-        if (locs.length > 1 && [...locSelect2.options].some(o => o.value === locs[1])) {
-            locSelect2.value = locs[1];
-        } else {
-            locSelect2.value = '';
-        }
-        
-        const vehSelect = document.getElementById('vehicleSelect');
-        if ([...vehSelect.options].some(o => o.value === item.vehicle)) vehSelect.value = item.vehicle;
-
-        document.getElementById('departureTime').value = item.departure ? item.departure.replace(' ', 'T') : '';
-        document.getElementById('returnTime').value = item.return ? item.return.replace(' ', 'T') : '';
-        
-        document.getElementById('delegationPurpose').value = (item.purpose && item.purpose !== 'Brak' && item.purpose !== 'Nie podano') ? item.purpose : '';
-        document.getElementById('workDescription').value = (item.workDescription && item.workDescription !== 'Brak' && item.workDescription !== 'Nie podano') ? item.workDescription : '';
-        
-        let allPeople = [];
-        if (item.author) allPeople.push(item.author);
-        if (item.coParticipants && item.coParticipants !== 'brak' && item.coParticipants !== 'Nie podano') {
-            allPeople = allPeople.concat(item.coParticipants.split(', '));
-        }
-        
-        document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
-        
-        document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-            cb.checked = allPeople.includes(cb.value);
-            cb.disabled = false;
-            cb.parentElement.style.opacity = '1';
-        });
-        
-        const myCosts = parseFloat(item.privateCosts) || 0;
-        if (myCosts > 0 && item.author) {
-            const empIndex = appData.employees.findIndex(e => e.name === item.author);
-            if(empIndex !== -1) {
-                const field = document.getElementById('cost_field_' + empIndex);
-                if (field) field.style.display = 'block';
-                const vIn = document.getElementById('cost_val_' + empIndex);
-                const dIn = document.getElementById('cost_desc_' + empIndex);
-                if(vIn) vIn.value = myCosts;
-                if(dIn) dIn.value = item.privateCostsDesc || '';
-            }
-        }
-        
-        switchTab('form');
-        calculateAllowancePreview();
-        
-        alert('✅ Skopiowano dane wyjazdu do formularza.\n\nWybierz swoje imię w polu "Wypełnia", sprawdź daty i wygeneruj swój protokół.');
-    }
-
-    function adminEditProtocol(id) {
-        const item = appData.history.find(i => i.id === id);
-        if (!item) return;
-
-        adminEditingId = id;
-
-        const locs = item.location ? String(item.location).split(', ') : [];
-        const locSelect = document.getElementById('locationSelect');
-        const locSelect2 = document.getElementById('locationSelect2');
-        
-        if (locs.length > 0 && [...locSelect.options].some(o => o.value === locs[0])) {
-            locSelect.value = locs[0];
-        }
-        if (locs.length > 1 && [...locSelect2.options].some(o => o.value === locs[1])) {
-            locSelect2.value = locs[1];
-        } else {
-            locSelect2.value = '';
-        }
-        
-        const vehSelect = document.getElementById('vehicleSelect');
-        if ([...vehSelect.options].some(o => o.value === item.vehicle)) vehSelect.value = item.vehicle;
-
-        document.getElementById('departureTime').value = item.departure ? item.departure.replace(' ', 'T') : '';
-        document.getElementById('returnTime').value = item.return ? item.return.replace(' ', 'T') : '';
-        
-        document.getElementById('delegationPurpose').value = (item.purpose && item.purpose !== 'Brak' && item.purpose !== 'Nie podano') ? item.purpose : '';
-        document.getElementById('workDescription').value = (item.workDescription && item.workDescription !== 'Brak' && item.workDescription !== 'Nie podano') ? item.workDescription : '';
-        
-        let allPeople = [];
-        if (item.author) allPeople.push(item.author);
-        if (item.coParticipants && item.coParticipants !== 'brak' && item.coParticipants !== 'Nie podano') {
-            allPeople = allPeople.concat(item.coParticipants.split(', '));
-        }
-        
-        document.querySelectorAll('input[name="authorRadio"]').forEach(r => r.checked = false);
-        
-        document.querySelectorAll('input[name="coParticipantCheckbox"]').forEach(cb => {
-            cb.checked = allPeople.includes(cb.value);
-            cb.disabled = false;
-            cb.parentElement.style.opacity = '1';
-        });
-        
-        const myCosts = parseFloat(item.privateCosts) || 0;
-        if (myCosts > 0 && item.author) {
-            const empIndex = appData.employees.findIndex(e => e.name === item.author);
-            if(empIndex !== -1) {
-                const field = document.getElementById('cost_field_' + empIndex);
-                if (field) field.style.display = 'block';
-                const vIn = document.getElementById('cost_val_' + empIndex);
-                const dIn = document.getElementById('cost_desc_' + empIndex);
-                if(vIn) vIn.value = myCosts;
-                if(dIn) dIn.value = item.privateCostsDesc || '';
-            }
-        }
-        
-        const btnSubmit = document.getElementById('mainSubmitBtn');
-        btnSubmit.textContent = "💾 Zapisz zmiany w protokole (Tryb Admin)";
-        btnSubmit.style.background = "#8e44ad";
-
-        switchTab('form');
-        calculateAllowancePreview();
-        
-        alert(`Tryb edycji (Admin) dla wyjazdu: ${item.location}.\nPopraw błędy w formularzu i kliknij fioletowy przycisk Zapisz. Dane zaktualizują się w historii bez powiadamiania mailem.`);
-    }
-
     function switchTab(tab) {
         try {
             document.getElementById('form-card').style.display = 'none'; 
@@ -1871,11 +1607,13 @@ ${item.author}`;
             document.getElementById('history-card').style.display = 'none'; 
             document.getElementById('cloud-card').style.display = 'none';
             document.getElementById('stats-card').style.display = 'none';
+            document.getElementById('vehicles-card').style.display = 'none';
             
             document.getElementById('tabFormBtn').classList.remove('active'); 
             document.getElementById('tabHistoryBtn').classList.remove('active');
             document.getElementById('tabCloudBtn').classList.remove('active');
             document.getElementById('tabStatsBtn').classList.remove('active');
+            document.getElementById('tabVehiclesBtn').classList.remove('active');
 
             if (tab === 'form') { 
                 document.getElementById('form-card').style.display = 'block'; 
@@ -1895,6 +1633,10 @@ ${item.author}`;
                 document.getElementById('stats-card').style.display = 'block';
                 document.getElementById('tabStatsBtn').classList.add('active');
                 renderStats();
+            } else if (tab === 'vehicles') {
+                document.getElementById('vehicles-card').style.display = 'block';
+                document.getElementById('tabVehiclesBtn').classList.add('active');
+                renderAdminVehiclesList();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch(e){}
@@ -2026,7 +1768,7 @@ ${item.author}`;
 
                                 ${emailActionHtml}
                                 
-                                <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
+                                ${isAdmin ? `<button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>` : `<button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>`}
                             </div>
                         </div>
                     </td>
@@ -2079,7 +1821,11 @@ function renderStats() {
                 totalAllowance += parseFloat(i.allowance) || 0;
                 totalHours += getDurationInHours(i.departure, i.return);
                 
-                const tripKey = i.departure + "_" + (i.vehicle || 'brak');
+                const tripDate = (i.departure || '').split(' ')[0] || (i.departure || '').split('T')[0];
+                const normVeh = (i.vehicle || 'brak').trim().toLowerCase();
+                const normLoc = (i.location || '').trim().toLowerCase();
+                const tripKey = tripDate + "_" + normLoc + "_" + normVeh;
+                
                 let isNewTrip = false;
                 
                 if (!uniqueUserTrips.has(tripKey)) {
@@ -2158,7 +1904,11 @@ function renderStats() {
                 stats[i.author].allowance += allow;
                 globalTotal += allow;
                 
-                const tripKey = i.departure + "_" + (i.vehicle || 'brak');
+                const tripDate = (i.departure || '').split(' ')[0] || (i.departure || '').split('T')[0];
+                const normVeh = (i.vehicle || 'brak').trim().toLowerCase();
+                const normLoc = (i.location || '').trim().toLowerCase();
+                const tripKey = tripDate + "_" + normLoc + "_" + normVeh;
+                
                 if (!uniqueFleetTrips.has(tripKey)) {
                     uniqueFleetTrips.add(tripKey);
                     totalTrips++;
@@ -2223,7 +1973,7 @@ function renderStats() {
         }
     } catch (e) {
         console.error("Błąd generowania statystyk:", e);
-        container.innerHTML = '<p style="color: red; font-size: 14px;">Wystąpił błąd podczas generowania statystyk.</p>';
+        container.innerHTML = '<p style="color: red; font-size: 14px;">Błąd odczytu starych danych. Upewnij się, że delegacje mają ustawioną datę wyjazdu.</p>';
     }
 }
 
@@ -2250,6 +2000,7 @@ function deleteHistoryItem(id) {
         logActivity(`Usunięto protokół z historii`);
         saveAppData();
         renderHistory();
+        uploadToCloud(true);
     }
 }
 
@@ -2259,7 +2010,9 @@ function clearHistory() {
         appData.history.forEach(i => appData.deletedIds.push(i.id));
         appData.history = []; 
         logActivity(`(Admin) Wyczyszczono całą historię protokołów`);
-        saveAppData(); renderHistory(); 
+        saveAppData(); 
+        renderHistory(); 
+        uploadToCloud(true);
     } 
 }
 
@@ -2277,6 +2030,7 @@ function clearFilteredHistory() {
         logActivity(`(Admin) Usunięto protokoły dla pracownika: ${filterEmp}`);
         saveAppData();
         renderHistory();
+        uploadToCloud(true);
     }
 }
 
@@ -2286,7 +2040,10 @@ function resetToDefaults() {
         appData.vehicles = [...defaultData.vehicles]; 
         appData.employees = JSON.parse(JSON.stringify(defaultData.employees));
         logActivity(`Zresetowano listy (słowniki) do wartości fabrycznych`);
-        saveAppData(); initApp(); alert('Listy zostały wyczyszczone do fabrycznych!');
+        saveAppData(); 
+        initApp(); 
+        alert('Listy zostały wyczyszczone do fabrycznych!');
+        uploadToCloud(true);
     }
 }
 
@@ -2325,7 +2082,7 @@ function mergeWithCloudData(cloudRecord) {
     let mergedLocs = Array.from(new Set([...(cloudRecord.locations || []), ...(appData.locations || [])]));
     appData.locations = sortLocations(mergedLocs.filter(loc => typeof loc === 'string' && !removedLocations.includes(loc.toLowerCase().trim())));
     
-    appData.vehicles = Array.from(new Set([...(cloudRecord.vehicles || []), ...(appData.vehicles || [])]));
+    appData.vehicles = sortVehicles(Array.from(new Set([...(cloudRecord.vehicles || []), ...(appData.vehicles || [])])));
     
     const empMap = new Map();
     (cloudRecord.employees || []).forEach(e => { if (e && e.name) empMap.set(e.name, e); });
@@ -2343,9 +2100,9 @@ function mergeWithCloudData(cloudRecord) {
         .slice(0, 150);
 }
 
-async function uploadToCloud() {
+async function uploadToCloud(silent = false) {
     const btn = document.getElementById('btnUploadCloud');
-    if (btn) btn.textContent = "Łączenie i wysyłanie...";
+    if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
     
     createBackup();
     
@@ -2362,7 +2119,7 @@ async function uploadToCloud() {
             if (data && data.record) {
                 mergeWithCloudData(data.record);
             }
-        } else if (resGet.status === 401 || resGet.status === 403) {
+        } else if (!silent && (resGet.status === 401 || resGet.status === 403)) {
             throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
         }
 
@@ -2397,22 +2154,27 @@ async function uploadToCloud() {
             populateFilterDropdown(); 
             populateStatsDates(); 
             populateHistoryFilterDates();
+            if (document.getElementById('vehicles-card').style.display === 'block') renderAdminVehiclesList();
             
             if (document.getElementById('history-card').style.display === 'block') renderHistory();
             if (document.getElementById('stats-card').style.display === 'block') renderStats();
             
-            logActivity('Pomyślnie wysłano dane do chmury');
-            alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
+            if (!silent) {
+                logActivity('Pomyślnie wysłano dane do chmury');
+                alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
+            }
         } else {
             const errBody = await resPut.text();
             throw new Error(`Serwer odrzucił zapis (Status ${resPut.status}): ${errBody}`);
         }
     } catch(err) { 
         console.error("Błąd zapisu w chmurze:", err);
-        logActivity(`Błąd chmury: ${err.message}`);
-        alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
+        if (!silent) {
+            logActivity(`Błąd chmury: ${err.message}`);
+            alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
+        }
     } finally {
-        if (btn) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
+        if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
     }
 }
 
@@ -2432,6 +2194,7 @@ async function downloadFromCloud(silent = false) {
             const data = await res.json();
             if (data && data.record) {
                 createBackup(); 
+                if (!silent) logActivity('Ręczne pobranie bazy z chmury');
                 mergeWithCloudData(data.record);
                 appData.lastSync = new Date().toLocaleString('pl-PL');
                 saveAppData(); 
@@ -2448,7 +2211,6 @@ async function downloadFromCloud(silent = false) {
                 if (document.getElementById('stats-card').style.display === 'block') renderStats();
                 
                 if (!silent) {
-                    logActivity('Ręczne pobranie bazy z chmury');
                     alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
                 }
             } else {
