@@ -108,6 +108,7 @@
         .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
         .manage-item:last-child { border-bottom: none; }
 
+        /* Animacje wysyłki (pieniądze) */
         @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
@@ -122,6 +123,7 @@
             user-select: none;
         }
 
+        /* Chłodniczo-serwisowe Animacje Tła (Boxzone) */
         @keyframes floatDownItem {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
             10% { opacity: 0.65; }
@@ -142,17 +144,25 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
+        /* Tosty ostrzegawcze i powiadomienia o synchronizacji */
         .alert-toast {
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: #e74c3c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold;
             font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000;
             width: 90%; max-width: 400px; text-align: center; line-height: 1.4;
         }
+        .sync-toast {
+            display: none; position: fixed; bottom: 20px; right: 20px;
+            background: #27ae60; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: bold;
+            font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000;
+        }
     </style>
 </head>
 <body>
 
 <div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
+<!-- Pływające powiadomienie o udanej synchronizacji w tle -->
+<div class="sync-toast" id="syncToast">☁️ Zsynchronizowano z chmurą</div>
 
 <div class="container" id="mainContainer">
     <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
@@ -344,7 +354,7 @@
         <div class="sync-info" id="syncStatusUI">
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
-        
+
         <div style="border: 1px solid #3498db; background: #ebf5fb; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
             <h3 style="color: #2980b9; margin-top: 0; font-size: 14px; font-weight: 900;">💡 Chcesz usprawnić aplikację?</h3>
             <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Masz pomysł na nową funkcję, zauważyłeś błąd lub chcesz coś zmienić?</p>
@@ -354,7 +364,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v66 (Pancerna Synchronizacja)
+            Wersja Systemu: v67 (Poprawiona Synchronizacja)
         </div>
     </div>
 
@@ -418,8 +428,8 @@
         
         <div style="background: #fdfcfe; border: 1px dashed #8e44ad; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" style="background-color: #27ae60; padding: 12px;" onclick="downloadFromCloud(false)">⬇️ Wymuś pobranie z chmury</button>
-                <button type="button" style="background-color: #2980b9; padding: 12px;" onclick="uploadToCloud(false)">⬆️ Wymuś wysłanie do chmury</button>
+                <button type="button" style="background-color: #27ae60; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="downloadFromCloud(false)">⬇️ Wymuś pobranie z chmury</button>
+                <button type="button" id="btnUploadCloud" style="background-color: #2980b9; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="uploadToCloud(false)">⬆️ Wymuś wysłanie do chmury</button>
             </div>
             
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
@@ -427,9 +437,9 @@
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <select id="adminDeleteEmpSelect" style="flex: 2; padding: 8px; font-size: 13px;"></select>
-                    <button type="button" style="background-color: #e67e22; color: white; padding: 8px; font-size: 12px; flex: 1; border: none; border-radius: 4px; font-weight: bold;" onclick="adminDeleteEmpHistory()">🗑 Usuń wpisy</button>
+                    <button type="button" style="background-color: #e67e22; color: white; padding: 8px; font-size: 12px; flex: 1; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="adminDeleteEmpHistory()">🗑 Usuń wpisy</button>
                 </div>
-                <button type="button" style="background-color: #c0392b; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold;" onclick="clearHistory()">⚠️ Wyczyść całą historię (Wszystkich)</button>
+                <button type="button" style="background-color: #c0392b; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="clearHistory()">⚠️ Wyczyść całą historię (Wszystkich)</button>
             </div>
         </div>
 
@@ -438,6 +448,26 @@
 </div>
 
 <script>
+    // ==========================================
+    // TOSTY I POWIADOMIENIA
+    // ==========================================
+    function showSyncToast(msg) {
+        const toast = document.getElementById('syncToast');
+        if (toast) {
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+    }
+
+    function showAlertToast() {
+        const toast = document.getElementById('alertToast');
+        if (toast) {
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 5000);
+        }
+    }
+
     // ==========================================
     // SELEKTYWNE ZARZĄDZANIE ANIMACJAMI (BOXZONE)
     // ==========================================
@@ -516,6 +546,23 @@
     setTimeout(spawnBackgroundAnimation, 3000);
     scheduleBackgroundAnimation();
 
+    function showMoneyAnimation() {
+        if (!animSettings.money) return;
+        const emojis = ['💰', '💵', '🪙', '💸'];
+        for (let i = 0; i < 40; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'money-drop';
+            drop.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            drop.style.left = Math.random() * 100 + 'vw';
+            drop.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            drop.style.animationDelay = (Math.random() * 0.5) + 's';
+            drop.style.fontSize = (Math.random() * 20 + 20) + 'px';
+            document.body.appendChild(drop);
+            
+            setTimeout(() => drop.remove(), 4500);
+        }
+    }
+
     // ==========================================
     // KLUCZE DO CHMURY:
     // ==========================================
@@ -523,7 +570,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v66'; 
+    const STORAGE_KEY = 'rckik_app_data_v67'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
@@ -701,7 +748,7 @@
     function loadData() {
         let savedStr = null;
         if (!localStorage.getItem(STORAGE_KEY)) {
-            for(let v = 65; v >= 20; v--) {
+            for(let v = 70; v >= 20; v--) {
                 const fallback = localStorage.getItem('rckik_app_data_v' + v);
                 if (fallback) { savedStr = fallback; break; }
             }
@@ -1646,7 +1693,7 @@ ${authorName}`;
                                 <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
                                     📝 Kopiuj i wyślij jako...
                                 </button>
-
+                                
                                 ${emailActionHtml}
                             </div>
                         </div>
@@ -1877,20 +1924,15 @@ ${authorName}`;
         createBackup();
         
         try {
+            // Najpierw pobierz by nie nadpisać kolegów
             const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 method: 'GET',
-                headers: { 
-                    'X-Master-Key': CLOUD_API_KEY
-                }
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
             });
             
             if (resGet.ok) {
                 const data = await resGet.json();
-                if (data && data.record) {
-                    mergeWithCloudData(data.record);
-                }
-            } else if (!silent && (resGet.status === 401 || resGet.status === 403)) {
-                throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
+                if (data && data.record) mergeWithCloudData(data.record);
             }
 
             const payload = {
@@ -1919,24 +1961,20 @@ ${authorName}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 
-                renderLocations(); 
-                renderVehicles(); 
-                renderEmployees(); 
-                populateFilterDropdown(); 
-                populateStatsDates(); 
-                populateHistoryFilterDates();
-                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
                 
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 if (document.getElementById('stats-card').style.display === 'block') renderStats();
+                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                 
                 if (!silent) {
                     logActivity('Pomyślnie wysłano dane do chmury');
                     alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
+                } else {
+                    showSyncToast("☁️ Zsynchronizowano z chmurą");
                 }
             } else {
-                const errBody = await resPut.text();
-                throw new Error(`Serwer odrzucił zapis (Status ${resPut.status}): ${errBody}`);
+                throw new Error(`Błąd API JSONBin (Status ${resPut.status})`);
             }
         } catch(err) { 
             console.error("Błąd zapisu w chmurze:", err);
@@ -1956,9 +1994,7 @@ ${authorName}`;
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 method: 'GET',
-                headers: { 
-                    'X-Master-Key': CLOUD_API_KEY
-                }
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
             });
             
             if (res.ok) {
@@ -1970,13 +2006,7 @@ ${authorName}`;
                     appData.lastSync = new Date().toLocaleString('pl-PL');
                     saveAppData(); 
                     
-                    renderLocations(); 
-                    renderVehicles(); 
-                    renderEmployees(); 
-                    populateFilterDropdown(); 
-                    populateStatsDates(); 
-                    populateHistoryFilterDates(); 
-                    updateSyncDateUI();
+                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
                     
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
                     if (document.getElementById('stats-card').style.display === 'block') renderStats();
@@ -1984,19 +2014,16 @@ ${authorName}`;
                     
                     if (!silent) {
                         alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
+                    } else {
+                        showSyncToast("☁️ Zsynchronizowano z chmurą");
                     }
-                } else {
-                    throw new Error("Pusta odpowiedź z serwera chmury.");
                 }
             } else { 
-                const errText = await res.text();
-                throw new Error(`Błąd pobierania (Status ${res.status}): ${errText}`);
+                throw new Error(`Błąd pobierania (Status ${res.status})`);
             }
         } catch(err) { 
             console.error("Błąd pobierania z chmury:", err);
-            if (!silent) {
-                alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
-            }
+            if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
         } finally {
             if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
         }
