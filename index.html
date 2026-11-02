@@ -108,7 +108,6 @@
         .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
         .manage-item:last-child { border-bottom: none; }
 
-        /* Animacje wysyłki (pieniądze) */
         @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
@@ -123,7 +122,6 @@
             user-select: none;
         }
 
-        /* Chłodniczo-serwisowe Animacje Tła (Boxzone) */
         @keyframes floatDownItem {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
             10% { opacity: 0.65; }
@@ -144,7 +142,6 @@
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
-        /* Tosty ostrzegawcze i powiadomienia o synchronizacji */
         .alert-toast {
             display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: #e74c3c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold;
@@ -161,7 +158,6 @@
 <body>
 
 <div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
-<!-- Pływające powiadomienie o udanej synchronizacji w tle -->
 <div class="sync-toast" id="syncToast">☁️ Zsynchronizowano z chmurą</div>
 
 <div class="container" id="mainContainer">
@@ -176,15 +172,12 @@
         <button type="button" id="tabHistoryBtn" onclick="switchTab('history')">Historia</button>
         <button type="button" id="tabStatsBtn" onclick="switchTab('stats')">📊 Statystyki</button>
         <button type="button" id="tabCloudBtn" onclick="switchTab('cloud')">☁️ Chmura</button>
-        <!-- ZAKŁADKA ADMINA -->
         <button type="button" id="tabAdminBtn" style="display: none; background-color: #8e44ad; color: white;" onclick="switchTab('admin')">🛠 Panel Admina</button>
     </div>
 
     <!-- FORMULARZ DELEGACJI -->
     <div class="card" id="form-card">
-        
         <h3 class="section-title">📍 Trasa i Pojazd</h3>
-        
         <div class="form-group">
             <label for="locationSelect">Główna lokalizacja (cel wyjazdu):</label>
             <select id="locationSelect"></select>
@@ -354,7 +347,7 @@
         <div class="sync-info" id="syncStatusUI">
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
-
+        
         <div style="border: 1px solid #3498db; background: #ebf5fb; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
             <h3 style="color: #2980b9; margin-top: 0; font-size: 14px; font-weight: 900;">💡 Chcesz usprawnić aplikację?</h3>
             <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Masz pomysł na nową funkcję, zauważyłeś błąd lub chcesz coś zmienić?</p>
@@ -364,7 +357,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v67 (Poprawiona Synchronizacja)
+            Wersja Systemu: v70 (Rescue & Pure Sync)
         </div>
     </div>
 
@@ -428,8 +421,8 @@
         
         <div style="background: #fdfcfe; border: 1px dashed #8e44ad; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" style="background-color: #27ae60; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="downloadFromCloud(false)">⬇️ Wymuś pobranie z chmury</button>
-                <button type="button" id="btnUploadCloud" style="background-color: #2980b9; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="uploadToCloud(false)">⬆️ Wymuś wysłanie do chmury</button>
+                <button type="button" style="background-color: #27ae60; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="unifiedSync(false, false)">⬇️ Wymuś pobranie z chmury</button>
+                <button type="button" style="background-color: #2980b9; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;" onclick="unifiedSync(true, false)">⬆️ Wymuś wysłanie do chmury</button>
             </div>
             
             <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
@@ -558,7 +551,6 @@
             drop.style.animationDelay = (Math.random() * 0.5) + 's';
             drop.style.fontSize = (Math.random() * 20 + 20) + 'px';
             document.body.appendChild(drop);
-            
             setTimeout(() => drop.remove(), 4500);
         }
     }
@@ -570,7 +562,7 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v67'; 
+    const STORAGE_KEY = 'rckik_app_data_v70'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
 
@@ -618,13 +610,11 @@
         isAdmin = false;
         adminEditingId = null;
         try { document.getElementById('tabAdminBtn').style.display = 'none'; } catch(e){}
-        
         try {
             const btnSubmit = document.getElementById('mainSubmitBtn');
             btnSubmit.textContent = "Generuj i Zapisz do Dziennika (Historii)";
             btnSubmit.style.background = "var(--primary-color)";
         } catch(e){}
-        
         alert("🔒 Wylogowano z trybu Administratora.");
         switchTab('form');
         if (document.getElementById('history-card').style.display === 'block') renderHistory();
@@ -687,7 +677,7 @@
             appData.history = appData.history.filter(i => i.author !== filterEmp);
             logActivity(`(Admin) Usunięto protokoły dla pracownika: ${filterEmp}`);
             saveAppData();
-            uploadToCloud(true);
+            unifiedSync(true, true);
             alert("Usunięto pomyślnie.");
         }
     }
@@ -697,7 +687,7 @@
             appData.activityLogs = [];
             saveAppData();
             renderAdminTab();
-            uploadToCloud(true);
+            unifiedSync(true, true);
         }
     }
 
@@ -745,16 +735,36 @@
 
     let appData;
 
-    function loadData() {
-        let savedStr = null;
-        if (!localStorage.getItem(STORAGE_KEY)) {
-            for(let v = 70; v >= 20; v--) {
-                const fallback = localStorage.getItem('rckik_app_data_v' + v);
-                if (fallback) { savedStr = fallback; break; }
+    // SKRYPT RATUNKOWY: Głębokie skanowanie pamięci i odzyskiwanie zaginionych protokołów!
+    function rescueLostData() {
+        let allHistory = new Map();
+        for (let i = 0; i < localStorage.length; i++) {
+            let key = localStorage.key(i);
+            if (key && (key.includes('rckik_app_data') || key.includes('rckik_app_backup'))) {
+                try {
+                    let raw = localStorage.getItem(key);
+                    if (raw) {
+                        let parsed = JSON.parse(raw);
+                        if (parsed && Array.isArray(parsed.history)) {
+                            parsed.history.forEach(item => {
+                                if (item && item.id) {
+                                    let existing = allHistory.get(item.id);
+                                    if (!existing || (item.updatedAt || 0) > (existing.updatedAt || 0)) {
+                                        allHistory.set(item.id, item);
+                                    }
+                                }
+                            });
+                        }
+                    }
+                } catch(e) { console.error("Rescue parse error for key", key, e); }
             }
-        } else {
-            savedStr = localStorage.getItem(STORAGE_KEY);
         }
+        return Array.from(allHistory.values()).sort((a,b) => b.id - a.id);
+    }
+
+    function loadData() {
+        let savedStr = localStorage.getItem(STORAGE_KEY);
+        let recoveredHistory = rescueLostData();
 
         try {
             if (savedStr) {
@@ -764,22 +774,24 @@
                 
                 let mergedLocs = Array.from(new Set([...defaultData.locations, ...(saved.locations || [])]));
                 mergedLocs = mergedLocs.filter(loc => typeof loc === 'string' && !removedLocations.includes(loc.toLowerCase().trim()) && !loadedDeletedDict.includes(loc));
-                mergedLocs = sortLocations(mergedLocs);
-
+                
                 let mergedVehs = Array.isArray(saved.vehicles) && saved.vehicles.length > 0 ? saved.vehicles : [...defaultData.vehicles];
                 mergedVehs = mergedVehs.filter(v => typeof v === 'string' && !loadedDeletedDict.includes(v));
 
                 appData = {
-                    locations: mergedLocs,
+                    locations: sortLocations(mergedLocs),
                     vehicles: sortVehicles(mergedVehs),
                     employees: Array.isArray(saved.employees) && saved.employees.length > 0 ? saved.employees : [...defaultData.employees],
                     distances: { ...locationDistances, ...(saved.distances || {}) },
-                    history: Array.isArray(saved.history) ? saved.history : [],
+                    history: recoveredHistory,
                     activityLogs: Array.isArray(saved.activityLogs) ? saved.activityLogs : [],
                     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
                     deletedDictItems: loadedDeletedDict,
                     lastSync: saved.lastSync || 'Nigdy'
                 };
+                
+                // Eliminacja usuniętych z odzyskanej historii
+                appData.history = appData.history.filter(h => !appData.deletedIds.includes(h.id));
                 
                 appData.history.forEach(item => {
                     if (item && item.location && (item.distance === undefined || isNaN(parseFloat(item.distance)) || parseFloat(item.distance) <= 0)) {
@@ -799,9 +811,13 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             } else {
                 appData = JSON.parse(JSON.stringify(defaultData));
+                appData.history = recoveredHistory;
+                appData.history = appData.history.filter(h => !appData.deletedIds.includes(h.id));
             }
         } catch (e) { 
+            console.error("Critical Load Error", e);
             appData = JSON.parse(JSON.stringify(defaultData)); 
+            appData.history = recoveredHistory;
         }
     }
     
@@ -809,15 +825,15 @@
 
     function saveAppData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
 
+    function createBackup() {
+        if(appData && appData.locations) {
+            localStorage.setItem(BACKUP_KEY, JSON.stringify(appData));
+        }
+    }
+
     function initApp() {
-        renderLocations(); renderVehicles(); renderEmployees(); 
+        refreshAllViews();
         if (!document.getElementById('departureTime').value) setDefaultDates(); 
-        
-        populateFilterDropdown(); 
-        populateStatsDates();
-        populateHistoryFilterDates();
-        calculateAllowancePreview();
-        updateSyncDateUI();
         
         try {
             if (!sessionStorage.getItem('rckik_session_logged')) {
@@ -825,6 +841,15 @@
                 sessionStorage.setItem('rckik_session_logged', 'true');
             }
         } catch(e) {}
+    }
+
+    function refreshAllViews() {
+        renderLocations(); renderVehicles(); renderEmployees(); 
+        populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
+        if (document.getElementById('history-card').style.display === 'block') renderHistory();
+        if (document.getElementById('stats-card').style.display === 'block') renderStats();
+        if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+        updateSyncDateUI();
     }
 
     function populateHistoryFilterDates() {
@@ -920,10 +945,10 @@
         
         logActivity(`Dodano nową lokalizację do słownika: ${val}`);
         saveAppData(); 
-        renderLocations(); 
+        refreshAllViews();
         document.getElementById('locationSelect').value = val;
         document.getElementById('newLocationInput').value = '';
-        uploadToCloud(true);
+        unifiedSync(true, true);
     }
 
     function renderAdminLocDistList() {
@@ -972,9 +997,8 @@
             
             logActivity(`(Admin) Zmieniono nazwę lokalizacji z ${oldName} na ${cleanNew}`);
             saveAppData(); 
-            renderLocations(); 
-            renderAdminLocDistList();
-            uploadToCloud(true);
+            refreshAllViews();
+            unifiedSync(true, true);
         }
     }
     
@@ -987,8 +1011,8 @@
                 appData.distances[key] = parsed;
                 logActivity(`(Admin) Edytowano dystans w bazie dla: ${key}`);
                 saveAppData();
-                renderAdminLocDistList();
-                uploadToCloud(true);
+                refreshAllViews();
+                unifiedSync(true, true);
             }
         }
     }
@@ -1002,9 +1026,8 @@
             appData.locations.splice(index, 1);
             logActivity(`(Admin) Usunięto lokalizację ze słownika: ${loc}`);
             saveAppData();
-            renderLocations();
-            renderAdminLocDistList();
-            uploadToCloud(true);
+            refreshAllViews();
+            unifiedSync(true, true);
         }
     }
 
@@ -1029,8 +1052,10 @@
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`Dodano nowy pojazd do słownika: ${val}`);
-        saveAppData(); renderVehicles(); document.getElementById('newVehicleInput').value = '';
-        uploadToCloud(true);
+        saveAppData(); 
+        refreshAllViews();
+        document.getElementById('newVehicleInput').value = '';
+        unifiedSync(true, true);
     }
     
     function adminAddVehicle() {
@@ -1045,10 +1070,9 @@
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`(Admin) Dodano nowy pojazd do słownika: ${val}`);
         saveAppData(); 
-        renderVehicles(); 
-        renderAdminVehiclesList();
+        refreshAllViews();
         document.getElementById('adminNewVehicleInput').value = '';
-        uploadToCloud(true);
+        unifiedSync(true, true);
     }
 
     function adminRenameVehicle(index) {
@@ -1064,9 +1088,8 @@
             appData.vehicles = sortVehicles(appData.vehicles);
             logActivity(`(Admin) Zmieniono nazwę pojazdu z ${oldName} na ${cleanNew}`);
             saveAppData(); 
-            renderVehicles(); 
-            renderAdminVehiclesList();
-            uploadToCloud(true);
+            refreshAllViews();
+            unifiedSync(true, true);
         }
     }
 
@@ -1079,9 +1102,8 @@
             appData.vehicles.splice(index, 1);
             logActivity(`(Admin) Usunięto pojazd: ${veh}`);
             saveAppData();
-            renderVehicles();
-            renderAdminVehiclesList();
-            uploadToCloud(true);
+            refreshAllViews();
+            unifiedSync(true, true);
         }
     }
 
@@ -1174,7 +1196,7 @@
     function toggleEmployeeVisibility(index) {
         if(appData.employees[index]) {
             appData.employees[index].hidden = !appData.employees[index].hidden;
-            saveAppData(); renderEmployees(); populateFilterDropdown();
+            saveAppData(); refreshAllViews();
         }
     }
 
@@ -1224,8 +1246,8 @@
         if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
         logActivity(`Dodano pracownika do słownika: ${name}`);
-        saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
-        uploadToCloud(true);
+        saveAppData(); refreshAllViews(); document.getElementById('newEmployeeInput').value = '';
+        unifiedSync(true, true);
     }
 
     function getDurationInHours(depStr, retStr) {
@@ -1409,7 +1431,7 @@
                 logActivity(`(Admin) Edytowano protokół wyjazdu (${locationStr})`);
                 
                 saveAppData();
-                uploadToCloud(true);
+                unifiedSync(true, true);
                 
                 adminEditingId = null;
                 const btnSubmit = document.getElementById('mainSubmitBtn');
@@ -1510,11 +1532,9 @@ ${authorName}`;
         logActivity(`Wygenerowano nowy protokół (${locationStr})`);
         
         saveAppData();
-        populateHistoryFilterDates();
-        populateStatsDates();
         document.getElementById('filterEmployee').value = "";
         
-        uploadToCloud(true);
+        unifiedSync(true, true);
 
         const emailsContainer = document.getElementById('emailsContainer');
         emailsContainer.innerHTML = `
@@ -1557,9 +1577,7 @@ ${authorName}`;
             } else if (tab === 'history') { 
                 document.getElementById('history-card').style.display = 'block'; 
                 document.getElementById('tabHistoryBtn').classList.add('active'); 
-                populateFilterDropdown(); 
-                populateHistoryFilterDates();
-                renderHistory(); 
+                refreshAllViews();
             } else if (tab === 'cloud') { 
                 document.getElementById('cloud-card').style.display = 'block'; 
                 document.getElementById('tabCloudBtn').classList.add('active'); 
@@ -1568,11 +1586,11 @@ ${authorName}`;
             } else if (tab === 'stats') {
                 document.getElementById('stats-card').style.display = 'block';
                 document.getElementById('tabStatsBtn').classList.add('active');
-                renderStats();
+                refreshAllViews();
             } else if (tab === 'admin') {
                 document.getElementById('admin-card').style.display = 'block';
                 document.getElementById('tabAdminBtn').classList.add('active');
-                renderAdminTab();
+                refreshAllViews();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch(e){}
@@ -1910,21 +1928,21 @@ ${authorName}`;
             logActivity(`Zmieniono status rozliczenia dla protokołu: ${item.location}`);
             saveAppData();
             renderHistory(); 
-            
             if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę od razu do chmury?')) {
-                uploadToCloud(true);
+                unifiedSync(true, true);
             }
         }
     }
 
-    async function uploadToCloud(silent = false) {
-        const btn = document.getElementById('btnUploadCloud');
-        if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
-        
+    // ==========================================
+    // NOWY, ZJEDNOCZONY SILNIK SYNCHRONIZACJI
+    // ==========================================
+    async function unifiedSync(isUpload, silent = false) {
+        if (!silent) showSyncToast("Łączenie z chmurą...");
         createBackup();
         
         try {
-            // Najpierw pobierz by nie nadpisać kolegów
+            // 1. ZAWSZE POBIERZ NAJNOWSZĄ WERSJĘ Z CHMURY (ŻEBY NIE NADPISAĆ INNYCH)
             const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 method: 'GET',
                 headers: { 'X-Master-Key': CLOUD_API_KEY }
@@ -1932,101 +1950,68 @@ ${authorName}`;
             
             if (resGet.ok) {
                 const data = await resGet.json();
-                if (data && data.record) mergeWithCloudData(data.record);
+                if (data && data.record) {
+                    mergeWithCloudData(data.record);
+                }
+            } else if (!silent) {
+                alert(`Błąd odczytu chmury (Kod ${resGet.status}).`);
+                return;
             }
 
-            const payload = {
-                locations: appData.locations,
-                vehicles: appData.vehicles,
-                employees: appData.employees,
-                distances: appData.distances,
-                history: appData.history,
-                activityLogs: appData.activityLogs,
-                deletedIds: appData.deletedIds,
-                deletedDictItems: appData.deletedDictItems || [],
-                lastSync: new Date().toLocaleString('pl-PL')
-            };
+            // 2. JEŚLI TO UPLOAD, WYŚLIJ POŁĄCZONE DANE
+            if (isUpload) {
+                const payload = {
+                    locations: appData.locations,
+                    vehicles: appData.vehicles,
+                    employees: appData.employees,
+                    distances: appData.distances,
+                    history: appData.history,
+                    activityLogs: appData.activityLogs,
+                    deletedIds: appData.deletedIds,
+                    deletedDictItems: appData.deletedDictItems || [],
+                    lastSync: new Date().toLocaleString('pl-PL')
+                };
 
-            const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
-                method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Master-Key': CLOUD_API_KEY
-                },
-                body: JSON.stringify(payload)
-            });
-            
-            if (resPut.ok) {
-                appData.lastSync = new Date().toLocaleString('pl-PL');
-                saveAppData(); 
-                updateSyncDateUI();
+                const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'X-Master-Key': CLOUD_API_KEY
+                    },
+                    body: JSON.stringify(payload)
+                });
                 
-                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
+                if (!resPut.ok && !silent) {
+                    alert(`Błąd zapisu w chmurze (Kod ${resPut.status}).`);
+                    return;
+                }
                 
-                if (document.getElementById('history-card').style.display === 'block') renderHistory();
-                if (document.getElementById('stats-card').style.display === 'block') renderStats();
-                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
-                
-                if (!silent) {
-                    logActivity('Pomyślnie wysłano dane do chmury');
-                    alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
-                } else {
-                    showSyncToast("☁️ Zsynchronizowano z chmurą");
+                if (resPut.ok) {
+                    appData.lastSync = new Date().toLocaleString('pl-PL');
                 }
             } else {
-                throw new Error(`Błąd API JSONBin (Status ${resPut.status})`);
+                appData.lastSync = new Date().toLocaleString('pl-PL');
             }
-        } catch(err) { 
-            console.error("Błąd zapisu w chmurze:", err);
+            
+            // 3. ZAPISZ I ODŚWIEŻ INTERFEJS
+            saveAppData(); 
+            refreshAllViews();
+            
             if (!silent) {
-                logActivity(`Błąd chmury: ${err.message}`);
-                alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
+                showSyncToast(isUpload ? "✅ Wysłano i połączono" : "✅ Pobrano pomyślnie");
             }
-        } finally {
-            if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
+            
+        } catch(err) { 
+            console.error("Błąd sieci:", err);
+            if (!silent) alert(`Błąd sieci: ${err.message}`);
         }
     }
 
-    async function downloadFromCloud(silent = false) {
-        const btn = document.getElementById('btnDownloadCloud');
-        if (!silent && btn) btn.textContent = "Pobieranie...";
-        
-        try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
-                method: 'GET',
-                headers: { 'X-Master-Key': CLOUD_API_KEY }
-            });
-            
-            if (res.ok) {
-                const data = await res.json();
-                if (data && data.record) {
-                    createBackup(); 
-                    if (!silent) logActivity('Ręczne pobranie bazy z chmury');
-                    mergeWithCloudData(data.record);
-                    appData.lastSync = new Date().toLocaleString('pl-PL');
-                    saveAppData(); 
-                    
-                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
-                    
-                    if (document.getElementById('history-card').style.display === 'block') renderHistory();
-                    if (document.getElementById('stats-card').style.display === 'block') renderStats();
-                    if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
-                    
-                    if (!silent) {
-                        alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
-                    } else {
-                        showSyncToast("☁️ Zsynchronizowano z chmurą");
-                    }
-                }
-            } else { 
-                throw new Error(`Błąd pobierania (Status ${res.status})`);
-            }
-        } catch(err) { 
-            console.error("Błąd pobierania z chmury:", err);
-            if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
-        } finally {
-            if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
-        }
+    function downloadFromCloud(silent = false) {
+        unifiedSync(false, silent);
+    }
+    function uploadToCloud(silent = false) {
+        unifiedSync(true, silent);
     }
 
     window.onload = () => {
