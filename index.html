@@ -108,6 +108,35 @@
         .manage-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e4e7eb; font-size: 13px; }
         .manage-item:last-child { border-bottom: none; }
 
+        /* Pływające powiadomienia (Toast) o synchronizacji */
+        .sync-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translate(-50%, -100px);
+            padding: 12px 24px;
+            border-radius: 30px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .sync-toast.show {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+        .sync-toast.info { background: #3498db; }
+        .sync-toast.success { background: #27ae60; }
+        .sync-toast.error { background: #e74c3c; }
+
         @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
@@ -141,18 +170,11 @@
             user-select: none;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
-
-        .alert-toast {
-            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #e74c3c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold;
-            font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000;
-            width: 90%; max-width: 400px; text-align: center; line-height: 1.4;
-        }
     </style>
 </head>
 <body>
 
-<div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
+<div id="syncToast" class="sync-toast"></div>
 
 <div class="container" id="mainContainer">
     <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
@@ -342,7 +364,7 @@
         </p>
         
         <div class="sync-info" id="syncStatusUI">
-            Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
+            Ostatnia udana synchronizacja z serwerem: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
         
         <div style="border: 1px solid #3498db; background: #ebf5fb; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
@@ -354,7 +376,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v65 (Dodano funkcję usuwania i poprawiono blokady synchronizacji)
+            Wersja Systemu: v66 (Dodano wskaźnik na żywo "Toast")
         </div>
     </div>
 
@@ -517,6 +539,32 @@
     scheduleBackgroundAnimation();
 
     // ==========================================
+    // SYSTEM POWIADOMIEŃ TOAST
+    // ==========================================
+    let toastTimeout;
+    function showSyncToast(message, type = 'info') {
+        const toast = document.getElementById('syncToast');
+        if (!toast) return;
+        
+        clearTimeout(toastTimeout);
+        
+        toast.className = `sync-toast show ${type}`;
+        toast.innerHTML = message;
+        
+        // Zniknij po 4 sekundach (chyba że info)
+        if (type !== 'info') {
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+    }
+
+    function hideSyncToast() {
+        const toast = document.getElementById('syncToast');
+        if (toast) toast.classList.remove('show');
+    }
+
+    // ==========================================
     // KLUCZE DO CHMURY:
     // ==========================================
     const CLOUD_BIN_ID = '6adf7776ffd5d160538d4d55'; 
@@ -559,7 +607,7 @@
             const pin = prompt("Podaj kod administratora:");
             if(pin === "9508") {
                 isAdmin = true;
-                alert("🔓 Tryb Administratora odblokowany.");
+                showSyncToast("🔓 Tryb Administratora odblokowany.", "success");
                 try { document.getElementById('tabAdminBtn').style.display = 'inline-block'; } catch(e){}
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
             } else if(pin !== null) {
@@ -579,7 +627,9 @@
             btnSubmit.style.background = "var(--primary-color)";
         } catch(e){}
         
-        alert("🔒 Wylogowano z trybu Administratora.");
+        showSyncToast("🔒 Wylogowano z trybu Administratora.", "info");
+        setTimeout(hideSyncToast, 3000);
+        
         switchTab('form');
         if (document.getElementById('history-card').style.display === 'block') renderHistory();
     }
@@ -817,7 +867,7 @@
     }
 
     function updateSyncDateUI() {
-        try { document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px;">${appData.lastSync}</b>`; } catch (e) {}
+        try { document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px;">${appData.lastSync}</b>`; } catch (e) {}
     }
 
     function setDefaultDates() {
@@ -1520,7 +1570,6 @@ ${i.author}`;
             saveAppData();
             renderHistory();
             uploadToCloud(true); // Aktualizacja w chmurze (roześle usunięcie do kolegów)
-            alert("Protokół został pomyślnie usunięty.");
         }
     }
 
@@ -1634,7 +1683,7 @@ ${i.author}`;
                 btnSubmit.style.background = "var(--primary-color)";
                 
                 switchTab('history');
-                alert("Protokół pomyślnie zaktualizowany w bazie bez dublowania (Tryb Admin).");
+                showSyncToast("✅ Protokół pomyślnie zaktualizowany (Tryb Admin).", "success");
                 return;
             }
         }
@@ -2144,7 +2193,7 @@ ${authorName}`;
     }
 
     // ==========================================
-    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY)
+    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY + TOAST)
     // ==========================================
 
     function createBackup() {
@@ -2236,7 +2285,7 @@ ${authorName}`;
 
     async function uploadToCloud(silent = false) {
         let waitLoops = 0;
-        // Zamiast odrzucać od razu (return), czekamy aż inna synchronizacja się zakończy (maks ok. 10 sek.)
+        // Zamiast odrzucać od razu, czekamy aż inna synchronizacja się zakończy (maks ok. 10 sek.)
         while (isSyncing && waitLoops < 20) {
             await new Promise(r => setTimeout(r, 500));
             waitLoops++;
@@ -2246,6 +2295,8 @@ ${authorName}`;
         
         const btn = document.getElementById('btnUploadCloud');
         if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
+        
+        showSyncToast("⏳ Wysyłanie zmian do chmury...", "info");
         
         createBackup();
         
@@ -2296,24 +2347,21 @@ ${authorName}`;
                 if (document.getElementById('stats-card').style.display === 'block') renderStats();
                 if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                 
-                if (!silent) {
-                    logActivity('Pomyślnie wysłano dane do chmury');
-                    alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
-                }
+                logActivity('Pomyślnie wysłano dane do chmury');
+                showSyncToast("✅ Baza wysłana i zaktualizowana!", "success");
             } else {
                 const errBody = await resPut.text();
                 throw new Error(`Serwer odrzucił zapis (Status ${resPut.status}): ${errBody}`);
             }
         } catch(err) { 
             console.error("Błąd zapisu w chmurze:", err);
+            
             try { 
-                document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px; color: red;">BŁĄD WYSYŁANIA</b>`; 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px; color: #e74c3c;">BŁĄD WYSYŁANIA</b>`; 
             } catch(e){}
             
-            if (!silent) {
-                logActivity(`Błąd chmury (zapis): ${err.message}`);
-                alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
-            }
+            logActivity(`Błąd chmury (zapis): ${err.message}`);
+            showSyncToast(`❌ Błąd zapisu w chmurze! Sprawdź internet.`, "error");
         } finally {
             if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
             isSyncing = false; // Zwolnienie blokady KOLEJKI ZAPISÓW
@@ -2331,6 +2379,8 @@ ${authorName}`;
 
         const btn = document.getElementById('btnDownloadCloud');
         if (!silent && btn) btn.textContent = "Pobieranie...";
+        
+        if (!silent) showSyncToast("⏳ Pobieranie z chmury...", "info");
         
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
@@ -2353,7 +2403,7 @@ ${authorName}`;
                     if (document.getElementById('stats-card').style.display === 'block') renderStats();
                     if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                     
-                    if (!silent) alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
+                    if (!silent) showSyncToast("✅ Baza pobrana i zsynchronizowana.", "success");
                 } else {
                     throw new Error("Pusta odpowiedź z serwera chmury.");
                 }
@@ -2363,11 +2413,12 @@ ${authorName}`;
             }
         } catch(err) { 
             console.error("Błąd pobierania z chmury:", err);
+            
             try { 
-                document.getElementById('syncStatusUI').innerHTML = `Ostatnia synchronizacja urządzenia:<br><b style="font-size: 16px; color: red;">BŁĄD POBIERANIA</b>`; 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px; color: #e74c3c;">BŁĄD POBIERANIA</b>`; 
             } catch(e){}
             
-            if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
+            if (!silent) showSyncToast(`❌ Błąd pobierania bazy z sieci!`, "error");
         } finally {
             if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
             isSyncing = false;
