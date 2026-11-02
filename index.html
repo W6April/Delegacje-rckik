@@ -354,7 +354,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v63 (Panel Admina zintegrowany)
+            Wersja Systemu: v64 (Pancerna Synchronizacja)
         </div>
     </div>
 
@@ -427,9 +427,9 @@
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <select id="adminDeleteEmpSelect" style="flex: 2; padding: 8px; font-size: 13px;"></select>
-                    <button type="button" style="background-color: #e67e22; padding: 8px; font-size: 12px; flex: 1;" onclick="adminDeleteEmpHistory()">🗑 Usuń jego wpisy</button>
+                    <button type="button" style="background-color: #e67e22; color: white; padding: 8px; font-size: 12px; flex: 1; border: none; border-radius: 4px; font-weight: bold;" onclick="adminDeleteEmpHistory()">🗑 Usuń wpisy</button>
                 </div>
-                <button type="button" style="background-color: #c0392b; padding: 10px;" onclick="clearHistory()">⚠️ Wyczyść całą historię (Wszystkich pracowników)</button>
+                <button type="button" style="background-color: #c0392b; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold;" onclick="clearHistory()">⚠️ Wyczyść całą historię (Wszystkich)</button>
             </div>
         </div>
 
@@ -523,9 +523,10 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v63'; 
+    const STORAGE_KEY = 'rckik_app_data_v64'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
+    let isSyncing = false; // MUTEX BLOCK ZABEZPIECZAJACY
 
     let deviceId = localStorage.getItem('rckik_device_id');
     if(!deviceId) {
@@ -606,7 +607,6 @@
         renderAdminVehiclesList();
         renderAdminLocDistList();
         
-        // Render Dziennika
         const tbody = document.getElementById('activityLogTableBody');
         tbody.innerHTML = '';
         if(!appData.activityLogs || appData.activityLogs.length === 0) {
@@ -623,7 +623,6 @@
             });
         }
         
-        // Przygotowanie selecta dla usuwania pracownika
         const sel = document.getElementById('adminDeleteEmpSelect');
         if(sel) {
             sel.innerHTML = '<option value="">Wybierz pracownika do usunięcia wpisów</option>';
@@ -873,7 +872,6 @@
         uploadToCloud(true);
     }
 
-    // Nowy Panel Administracyjny dla Lokalizacji i Dystansów
     function renderAdminLocDistList() {
         const container = document.getElementById('adminLocDistList'); if (!container) return;
         container.innerHTML = '';
@@ -1624,8 +1622,6 @@ ${authorName}`;
                                 ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
 
                                 ${emailActionHtml}
-                                
-                                <button type="button" class="btn-icon-delete" onclick="deleteHistoryItem(${i.id})" title="Usuń ten raport">🗑️</button>
                             </div>
                         </div>
                     </td>
@@ -1848,92 +1844,134 @@ ${authorName}`;
         }
     }
 
-    function deleteHistoryItem(id) {
-        if (confirm('Czy na pewno chcesz bezpowrotnie usunąć ten pojedynczy raport z historii?')) {
-            if (!appData.deletedIds) appData.deletedIds = [];
-            appData.deletedIds.push(id); 
-            appData.history = appData.history.filter(item => item.id !== id);
-            logActivity(`Usunięto protokół z historii`);
-            saveAppData();
-            renderHistory();
-            uploadToCloud(true);
+    async function uploadToCloud(silent = false) {
+        if (isSyncing) {
+            console.log("Synchronizacja trwa, pominięto podwójne wywołanie.");
+            return;
         }
-    }
+        isSyncing = true;
+        
+        const btn = document.getElementById('btnUploadCloud');
+        if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
+        
+        createBackup();
+        
+        try {
+            // 1. Zawsze najpierw pobieramy najnowszą strukturę
+            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'GET',
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
+            });
+            
+            if (resGet.ok) {
+                const data = await resGet.json();
+                if (data && data.record) mergeWithCloudData(data.record);
+            } else if (!silent && (resGet.status === 401 || resGet.status === 403)) {
+                throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
+            }
 
-    function clearHistory() { 
-        if (prompt('UWAGA! Czy wyczyścić CAŁĄ historię dla wszystkich pracowników? (Zniknie dla każdego po zsynchronizowaniu!)\n\nWpisz słowo TAK aby potwierdzić:') === 'TAK') { 
-            if (!appData.deletedIds) appData.deletedIds = [];
-            appData.history.forEach(i => appData.deletedIds.push(i.id));
-            appData.history = []; 
-            logActivity(`(Admin) Wyczyszczono całą historię protokołów`);
-            saveAppData(); 
-            renderHistory(); 
-            uploadToCloud(true);
-        } 
-    }
-    
-    function recalculateZeros() {
-        let fixed = 0;
-        appData.history.forEach(item => {
-            let dist = parseFloat(item.distance);
-            if(isNaN(dist) || dist <= 0) {
-                const locs = String(item.location || '').split(', ');
-                const routeKey = locs.map(l => l.trim().toLowerCase()).sort().join(' + ');
+            // 2. Wysyłamy nadpisany (scaliowany) plik z blokadą wersjonowania (X-Bin-Versioning)
+            const payload = {
+                locations: appData.locations,
+                vehicles: appData.vehicles,
+                employees: appData.employees,
+                distances: appData.distances,
+                history: appData.history,
+                activityLogs: appData.activityLogs,
+                deletedIds: appData.deletedIds,
+                lastSync: new Date().toLocaleString('pl-PL')
+            };
+
+            const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-Master-Key': CLOUD_API_KEY,
+                    'X-Bin-Versioning': 'false' // BLOKUJE TWORZENIE ZBĘDNYCH WERSJI LIMITUJĄCYCH DARMOWE KONTO
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (resPut.ok) {
+                appData.lastSync = new Date().toLocaleString('pl-PL');
+                saveAppData(); 
+                updateSyncDateUI();
                 
-                if(appData.distances[routeKey] !== undefined) {
-                    item.distance = appData.distances[routeKey];
-                } else {
-                    let maxDist = 0;
-                    locs.forEach(l => {
-                        let distForLoc = appData.distances[l.trim().toLowerCase()] || 0;
-                        if(distForLoc > maxDist) maxDist = distForLoc;
-                    });
-                    item.distance = maxDist;
+                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
+                
+                if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                if (document.getElementById('stats-card').style.display === 'block') renderStats();
+                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+                
+                if (!silent) {
+                    logActivity('Pomyślnie wysłano dane do chmury');
+                    alert("✅ Baza została pomyślnie wysłana i zaktualizowana w chmurze!");
                 }
-                fixed++;
+            } else {
+                const errBody = await resPut.text();
+                throw new Error(`Serwer odrzucił zapis (Status ${resPut.status}): ${errBody}`);
             }
-        });
-        
-        logActivity(`(Admin) Uruchomiono masowe przeliczanie pustych dystansów w historii (naprawiono: ${fixed})`);
-        saveAppData();
-        renderAdminLocDistList();
-        uploadToCloud(true);
-        alert(`Operacja zakończona. Uzupełniono/przeliczono ${fixed} brakujących wpisów w Historii.`);
-    }
-
-    function copyToClipboard(btn) {
-        navigator.clipboard.writeText(decodeURIComponent(btn.getAttribute('data-text'))).then(() => {
-            const org = btn.textContent; btn.textContent = 'Skopiowano! ✓'; btn.style.backgroundColor = '#27ae60';
-            setTimeout(() => { btn.textContent = org; btn.style.backgroundColor = ''; }, 2000);
-        });
-    }
-
-    function showAlertToast() {
-        const toast = document.getElementById('alertToast');
-        if (toast) {
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 5000);
+        } catch(err) { 
+            console.error("Błąd zapisu w chmurze:", err);
+            if (!silent) {
+                logActivity(`Błąd chmury (zapis): ${err.message}`);
+                alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
+            }
+        } finally {
+            if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
+            isSyncing = false; // Zwolnienie blokady
         }
     }
 
-    function syncAfterEmail(id, hasCosts = false) {
-        if(id) {
-            const item = appData.history.find(i => i.id === id);
-            if(item) {
-                item.isSent = true;
-                item.updatedAt = Date.now();
-                saveAppData();
+    async function downloadFromCloud(silent = false) {
+        if (isSyncing) return;
+        isSyncing = true;
+
+        const btn = document.getElementById('btnDownloadCloud');
+        if (!silent && btn) btn.textContent = "Pobieranie...";
+        
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'GET',
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.record) {
+                    createBackup(); 
+                    if (!silent) logActivity('Ręczne pobranie bazy z chmury');
+                    mergeWithCloudData(data.record);
+                    appData.lastSync = new Date().toLocaleString('pl-PL');
+                    saveAppData(); 
+                    
+                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
+                    
+                    if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                    if (document.getElementById('stats-card').style.display === 'block') renderStats();
+                    if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+                    
+                    if (!silent) alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
+                } else {
+                    throw new Error("Pusta odpowiedź z serwera chmury.");
+                }
+            } else { 
+                const errText = await res.text();
+                throw new Error(`Błąd pobierania (Status ${res.status}): ${errText}`);
             }
+        } catch(err) { 
+            console.error("Błąd pobierania z chmury:", err);
+            if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
+        } finally {
+            if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
+            isSyncing = false;
         }
-        
-        if(hasCosts) showAlertToast();
-        
-        if (animSettings.money) showMoneyAnimation();
-        
-        setTimeout(() => {
-            uploadToCloud(true);
-        }, 1200);
     }
+
+    window.onload = () => {
+        initApp();
+        downloadFromCloud(true); 
+    };
 </script>
 
 </body>
