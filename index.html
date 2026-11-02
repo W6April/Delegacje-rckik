@@ -385,7 +385,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v67 (Dodano pełną Kopię Zapasową i Eksport JSON)
+            Wersja Systemu: v67 (Zabezpieczona Czarna Lista aut usuniętych)
         </div>
     </div>
 
@@ -461,18 +461,6 @@
                     <button type="button" style="background-color: #e67e22; color: white; padding: 8px; font-size: 12px; flex: 1; border: none; border-radius: 4px; font-weight: bold;" onclick="adminDeleteEmpHistory()">🗑 Usuń wpisy</button>
                 </div>
                 <button type="button" style="background-color: #c0392b; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold;" onclick="clearHistory()">⚠️ Wyczyść całą historię (Wszystkich)</button>
-            </div>
-        </div>
-
-        <h3 class="section-title" style="color: #8e44ad;">💾 Kopia Zapasowa (Lokalny Plik)</h3>
-        <p style="font-size: 12px; color: #666; margin-top: -5px; margin-bottom: 10px;">Pobierz wszystkie dane do bezpiecznego pliku na dysk, aby w razie awarii chmury móc je przywrócić.</p>
-        
-        <div style="background: #fdfcfe; border: 1px dashed #8e44ad; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" style="background-color: #2c3e50; padding: 12px;" onclick="exportBackupToFile()">⬇️ Pobierz plik z kopią bazy</button>
-                
-                <input type="file" id="importBackupFile" style="display: none;" accept=".json" onchange="importBackupFromFile(event)">
-                <button type="button" style="background-color: #f39c12; padding: 12px;" onclick="document.getElementById('importBackupFile').click()">📂 Wgraj plik i przywróć dane</button>
             </div>
         </div>
 
@@ -572,7 +560,6 @@
         toast.className = `sync-toast show ${type}`;
         toast.innerHTML = message;
         
-        // Zniknij po 4 sekundach (chyba że info)
         if (type !== 'info') {
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
@@ -595,7 +582,7 @@
     const STORAGE_KEY = 'rckik_app_data_v64'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
-    let isSyncing = false; // BLOKADA SYNCHRONIZACJI
+    let isSyncing = false; 
 
     let deviceId = localStorage.getItem('rckik_device_id');
     if(!deviceId) {
@@ -764,6 +751,7 @@
         history: [],
         activityLogs: [],
         deletedIds: [],
+        deletedDict: [], // Czarna lista dla usuniętych słowników
         lastSync: 'Nigdy'
     };
 
@@ -796,6 +784,7 @@
                     history: Array.isArray(saved.history) ? saved.history : [],
                     activityLogs: Array.isArray(saved.activityLogs) ? saved.activityLogs : [],
                     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
+                    deletedDict: Array.isArray(saved.deletedDict) ? saved.deletedDict : [],
                     lastSync: saved.lastSync || 'Nigdy'
                 };
                 
@@ -888,9 +877,16 @@
     }
 
     function updateSyncDateUI() {
-        try { document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px;">${appData.lastSync}</b>`; } catch (e) {} }  function setDefaultDates() { const now = new Date(); const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0'); const todayStr = `${year}-${month}-${day}`;
+        try { document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px;">${appData.lastSync}</b>`; } catch (e) {}
+    }
+
+    function setDefaultDates() {
+        const now = new Date();
+        const year = now.getFullYear(); const month = String(now.getMonth() + 1).padStart(2, '0'); const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
         try {
-            document.getElementById('departureTime').value = `${todayStr}T06:00`; document.getElementById('returnTime').value = `${todayStr}T14:00`;
+            document.getElementById('departureTime').value = `${todayStr}T06:00`;
+            document.getElementById('returnTime').value = `${todayStr}T14:00`;
         } catch(e) {}
     }
 
@@ -924,6 +920,11 @@
             if (isNaN(dist)) dist = 0;
         }
         
+        // Zdejmij z czarnej listy jeśli kiedyś ktoś ją usunął
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(d => d !== val.toLowerCase());
+        }
+
         appData.locations.push(val); 
         appData.locations = sortLocations(appData.locations);
         appData.distances[val.toLowerCase()] = dist * 2;
@@ -969,6 +970,12 @@
         const oldName = appData.locations[index];
         const newName = prompt('Podaj nową nazwę dla lokalizacji:', oldName);
         if (newName && newName.trim() !== '' && newName !== oldName) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(oldName.toLowerCase().trim()); // Zablokuj starą nazwę w chmurze
+            
+            appData.deletedDict = appData.deletedDict.filter(d => d !== newName.toLowerCase().trim()); // Odblokuj nową
+            
             appData.locations[index] = newName.trim();
             appData.locations = sortLocations(appData.locations);
             
@@ -976,7 +983,7 @@
                 appData.distances[newName.trim().toLowerCase()] = appData.distances[oldName.toLowerCase()];
             }
             
-            logActivity(`(Admin) Zmieniono nazwę lokalizacji z ${oldName} na${newName.trim()}`);
+            logActivity(`(Admin) Zmieniono nazwę lokalizacji z ${oldName} na ${newName.trim()}`);
             saveAppData(); 
             renderLocations(); 
             renderAdminLocDistList();
@@ -1002,6 +1009,9 @@
     function adminDeleteLoc(index) {
         const loc = appData.locations[index];
         if (confirm(`Czy na pewno usunąć '${loc}' z bazy?`)) {
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(loc.toLowerCase().trim()); // CZARNA LISTA
+            
             appData.locations.splice(index, 1);
             logActivity(`(Admin) Usunięto lokalizację ze słownika: ${loc}`);
             saveAppData();
@@ -1025,6 +1035,12 @@
         const val = document.getElementById('newVehicleInput').value.trim();
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        
+        // Zdejmij z czarnej listy
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(v => v !== val.toLowerCase());
+        }
+
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`Dodano nowy pojazd do słownika: ${val}`);
@@ -1036,6 +1052,11 @@
         const val = document.getElementById('adminNewVehicleInput').value.trim();
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(v => v !== val.toLowerCase());
+        }
+
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`(Admin) Dodano nowy pojazd do słownika: ${val}`);
@@ -1050,9 +1071,15 @@
         const oldName = appData.vehicles[index];
         const newName = prompt('Podaj nową nazwę dla pojazdu:', oldName);
         if (newName && newName.trim() !== '' && newName !== oldName) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(oldName.toLowerCase().trim()); // Zablokuj starą nazwę w chmurze
+            
+            appData.deletedDict = appData.deletedDict.filter(v => v !== newName.toLowerCase().trim());
+
             appData.vehicles[index] = newName.trim();
             appData.vehicles = sortVehicles(appData.vehicles);
-            logActivity(`(Admin) Zmieniono nazwę pojazdu z ${oldName} na${newName.trim()}`);
+            logActivity(`(Admin) Zmieniono nazwę pojazdu z ${oldName} na ${newName.trim()}`);
             saveAppData(); 
             renderVehicles(); 
             renderAdminVehiclesList();
@@ -1063,6 +1090,10 @@
     function adminDeleteVehicle(index) {
         const veh = appData.vehicles[index];
         if (confirm(`Czy na pewno usunąć pojazd '${veh}'?`)) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(veh.toLowerCase().trim()); // CZARNA LISTA
+
             appData.vehicles.splice(index, 1);
             logActivity(`(Admin) Usunięto pojazd: ${veh}`);
             saveAppData();
@@ -1210,8 +1241,58 @@
         if (!name) return alert('Wpisz imię i nazwisko pracownika.');
         if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
-        logActivity(`Dodano pracownika do słownika: ${name}`); saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = ''; uploadToCloud(true); }  function getDurationInHours(depStr, retStr) { if (!depStr \vert{}\vert{} !retStr) return 0; try { const start = new Date(String(depStr).replace(' ', 'T')); const end = new Date(String(retStr).replace(' ', 'T')); const diffMs = end - start; if (diffMs <= 0 \vert{}\vert{} isNaN(diffMs)) return 0; return diffMs / (1000 * 60 * 60); } catch(e) { return 0; } }  function calculateAllowance(depStr, retStr) { if (!depStr \vert{}\vert{} !retStr) return 0; const totalHours = getDurationInHours(depStr, retStr); if (totalHours <= 0) return 0; const dailyRate = 45.0;  if (totalHours < 24) { if (totalHours < 8) return 0; if (totalHours < 12) return dailyRate * 0.5; return dailyRate; } else { let allowance = Math.floor(totalHours / 24) * dailyRate; const rem = totalHours \% 24; if (rem > 0) { if (rem <= 8) allowance += dailyRate * 0.5; else allowance += dailyRate; } return allowance; } }  function calculateDurationString(depStr, retStr) { if (!depStr \vert{}\vert{} !retStr) return 'Brak danych'; try { const start = new Date(String(depStr).replace(' ', 'T')); const end = new Date(String(retStr).replace(' ', 'T')); const diffMs = end - start; if (diffMs <= 0 \vert{}\vert{} isNaN(diffMs)) return '0 godz. 0 min.';  const totalMins = Math.floor(diffMs / (1000 * 60)); const days = Math.floor(totalMins / (24 * 60)); const hours = Math.floor((totalMins \% (24 * 60)) / 60); const mins = totalMins \% 60;  if (days > 0) { return `${days} dni, ${hours} godz.${mins} min.`; } 
-            else { return `${hours} godz.${mins} min.`; }
+        logActivity(`Dodano pracownika do słownika: ${name}`);
+        saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
+        uploadToCloud(true);
+    }
+
+    function getDurationInHours(depStr, retStr) {
+        if (!depStr || !retStr) return 0;
+        try {
+            const start = new Date(String(depStr).replace(' ', 'T'));
+            const end = new Date(String(retStr).replace(' ', 'T'));
+            const diffMs = end - start;
+            if (diffMs <= 0 || isNaN(diffMs)) return 0;
+            return diffMs / (1000 * 60 * 60);
+        } catch(e) { return 0; }
+    }
+
+    function calculateAllowance(depStr, retStr) {
+        if (!depStr || !retStr) return 0;
+        const totalHours = getDurationInHours(depStr, retStr);
+        if (totalHours <= 0) return 0;
+        const dailyRate = 45.0;
+        
+        if (totalHours < 24) {
+            if (totalHours < 8) return 0;
+            if (totalHours < 12) return dailyRate * 0.5;
+            return dailyRate;
+        } else {
+            let allowance = Math.floor(totalHours / 24) * dailyRate;
+            const rem = totalHours % 24;
+            if (rem > 0) {
+                if (rem <= 8) allowance += dailyRate * 0.5;
+                else allowance += dailyRate; 
+            }
+            return allowance;
+        }
+    }
+
+    function calculateDurationString(depStr, retStr) {
+        if (!depStr || !retStr) return 'Brak danych';
+        try {
+            const start = new Date(String(depStr).replace(' ', 'T'));
+            const end = new Date(String(retStr).replace(' ', 'T'));
+            const diffMs = end - start;
+            if (diffMs <= 0 || isNaN(diffMs)) return '0 godz. 0 min.';
+            
+            const totalMins = Math.floor(diffMs / (1000 * 60));
+            const days = Math.floor(totalMins / (24 * 60));
+            const hours = Math.floor((totalMins % (24 * 60)) / 60);
+            const mins = totalMins % 60;
+            
+            if (days > 0) { return `${days} dni, ${hours} godz. ${mins} min.`; } 
+            else { return `${hours} godz. ${mins} min.`; }
         } catch(e) { return 'Błąd kalkulacji'; }
     }
 
@@ -1299,7 +1380,7 @@
         const i = appData.history.find(item => item.id === id);
         if(!i) return;
 
-        const emailSubject = `${i.location} -${i.author}`;
+        const emailSubject = `${i.location} - ${i.author}`;
         const privateC = parseFloat(i.privateCosts) || 0;
         const allowance = parseFloat(i.allowance) || 0;
         const totalSum = allowance + privateC;
@@ -1364,7 +1445,7 @@ ${i.author}`;
                 <div class="email-body">${emailBody}</div>
                 <div class="actions-row">
                     <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
-                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email" onclick="syncAfterEmail(${i.id},${privateC > 0})" target="_blank">
+                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email" onclick="syncAfterEmail(${i.id}, ${privateC > 0})" target="_blank">
                         ✉️ Wyślij e-mail (Otwórz pocztę)
                     </a>
                 </div>
@@ -1382,20 +1463,62 @@ ${i.author}`;
         document.getElementById('mainSubmitBtn').style.background = "var(--primary-color)";
 
         // Uzupełnienie danych w formularzu
-        if (document.getElementById('locationSelect').querySelector(`option[value="${item.location.split(',')[0].trim()}"]`)) { document.getElementById('locationSelect').value = item.location.split(',')[0].trim(); }  if (item.location.includes(',')) { const loc2 = item.location.split(',')[1].trim(); if (document.getElementById('locationSelect2').querySelector(`option[value="${loc2}"]`)) {
+        if (document.getElementById('locationSelect').querySelector(`option[value="${item.location.split(',')[0].trim()}"]`)) {
+            document.getElementById('locationSelect').value = item.location.split(',')[0].trim();
+        }
+        
+        if (item.location.includes(',')) {
+            const loc2 = item.location.split(',')[1].trim();
+            if (document.getElementById('locationSelect2').querySelector(`option[value="${loc2}"]`)) {
                 document.getElementById('locationSelect2').value = loc2;
             }
         } else {
             document.getElementById('locationSelect2').value = '';
         }
 
-        if (document.getElementById('vehicleSelect').querySelector(`option[value="${item.vehicle}"]`)) { document.getElementById('vehicleSelect').value = item.vehicle; }  document.getElementById('delegationPurpose').value = item.purpose; document.getElementById('workDescription').value = item.workDescription;  // Zaznaczanie autora const radios = document.querySelectorAll('input[name="authorRadio"]'); radios.forEach(r => r.checked = (r.value === item.author));  // Zaznaczanie współuczestników const coPartsList = item.coParticipants.split(',').map(s => s.trim()); const checkboxes = document.querySelectorAll('input[name="coParticipantCheckbox"]'); checkboxes.forEach(cb => cb.checked = coPartsList.includes(cb.value));  updateParticipantRoles(); switchTab('form'); alert('Dane zostały skopiowane do formularza. Możesz zmienić daty i zapisać jako nowy protokół.'); }  function adminEditProtocol(id) { const item = appData.history.find(i => i.id === id); if(!item) return;  adminEditingId = id; document.getElementById('mainSubmitBtn').textContent = "🛠 Zapisz Edycję Protokołu (Admin)"; document.getElementById('mainSubmitBtn').style.background = "#8e44ad";  if (document.getElementById('locationSelect').querySelector(`option[value="${item.location.split(',')[0].trim()}"]`)) {
+        if (document.getElementById('vehicleSelect').querySelector(`option[value="${item.vehicle}"]`)) {
+            document.getElementById('vehicleSelect').value = item.vehicle;
+        }
+
+        document.getElementById('delegationPurpose').value = item.purpose;
+        document.getElementById('workDescription').value = item.workDescription;
+        
+        // Zaznaczanie autora
+        const radios = document.querySelectorAll('input[name="authorRadio"]');
+        radios.forEach(r => r.checked = (r.value === item.author));
+        
+        // Zaznaczanie współuczestników
+        const coPartsList = item.coParticipants.split(',').map(s => s.trim());
+        const checkboxes = document.querySelectorAll('input[name="coParticipantCheckbox"]');
+        checkboxes.forEach(cb => cb.checked = coPartsList.includes(cb.value));
+
+        updateParticipantRoles();
+        switchTab('form');
+        alert('Dane zostały skopiowane do formularza. Możesz zmienić daty i zapisać jako nowy protokół.');
+    }
+
+    function adminEditProtocol(id) {
+        const item = appData.history.find(i => i.id === id);
+        if(!item) return;
+
+        adminEditingId = id;
+        document.getElementById('mainSubmitBtn').textContent = "🛠 Zapisz Edycję Protokołu (Admin)";
+        document.getElementById('mainSubmitBtn').style.background = "#8e44ad";
+
+        if (document.getElementById('locationSelect').querySelector(`option[value="${item.location.split(',')[0].trim()}"]`)) {
             document.getElementById('locationSelect').value = item.location.split(',')[0].trim();
         }
         
         if (item.location.includes(',')) {
             const loc2 = item.location.split(',')[1].trim();
-            if (document.getElementById('locationSelect2').querySelector(`option[value="${loc2}"]`)) { document.getElementById('locationSelect2').value = loc2; } } else { document.getElementById('locationSelect2').value = ''; }  if (document.getElementById('vehicleSelect').querySelector(`option[value="${item.vehicle}"]`)) {
+            if (document.getElementById('locationSelect2').querySelector(`option[value="${loc2}"]`)) {
+                document.getElementById('locationSelect2').value = loc2;
+            }
+        } else {
+            document.getElementById('locationSelect2').value = '';
+        }
+
+        if (document.getElementById('vehicleSelect').querySelector(`option[value="${item.vehicle}"]`)) {
             document.getElementById('vehicleSelect').value = item.vehicle;
         }
 
@@ -1624,7 +1747,7 @@ ${i.author}`;
             }
         }
 
-        const emailSubject = `${locationStr} -${authorName}`;
+        const emailSubject = `${locationStr} - ${authorName}`;
         let emailBody = `Szanowny Panie Kierowniku,
 
 Zgłaszam odbycie podróży służbowej w celu rozliczenia diety.
@@ -1695,4 +1818,675 @@ ${authorName}`;
             updatedAt: Date.now()
         });
         
-        logActivity(`Wygenerowano nowy prot
+        logActivity(`Wygenerowano nowy protokół (${locationStr})`);
+        
+        saveAppData();
+        populateHistoryFilterDates();
+        populateStatsDates();
+        document.getElementById('filterEmployee').value = "";
+        
+        // ZAWASZE wysyłaj do chmury po wygenerowaniu nowego (cichy autozapis)
+        uploadToCloud(true);
+
+        const emailsContainer = document.getElementById('emailsContainer');
+        emailsContainer.innerHTML = `
+            <div class="email-preview">
+                <div class="email-header">
+                    E-mail do: <span style="color:var(--primary-color);">${DEFAULT_MANAGER_EMAIL}</span>
+                    <span class="badge">Do zwrotu: ${totalAmountToReturn.toFixed(2)} zł</span>
+                </div>
+                <div style="font-size: 13px; margin-bottom: 8px;"><strong>Temat:</strong> ${emailSubject}</div>
+                <div class="email-body">${emailBody}</div>
+                <div class="actions-row">
+                    <button type="button" onclick="copyToClipboard(this)" data-text="${encodeURIComponent('Temat: ' + emailSubject + '\n\n' + emailBody)}">Kopiuj treść</button>
+                    <a href="mailto:${DEFAULT_MANAGER_EMAIL}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}" class="btn-email" onclick="syncAfterEmail(${newId}, ${myCosts > 0})" target="_blank">
+                        ✉️ Wyślij e-mail (Otwórz pocztę)
+                    </a>
+                </div>
+            </div>
+        `;
+        switchTab('results');
+    }
+
+    function switchTab(tab) {
+        try {
+            document.getElementById('form-card').style.display = 'none'; 
+            document.getElementById('results-card').style.display = 'none';
+            document.getElementById('history-card').style.display = 'none'; 
+            document.getElementById('cloud-card').style.display = 'none';
+            document.getElementById('stats-card').style.display = 'none';
+            document.getElementById('admin-card').style.display = 'none';
+            
+            document.getElementById('tabFormBtn').classList.remove('active'); 
+            document.getElementById('tabHistoryBtn').classList.remove('active');
+            document.getElementById('tabCloudBtn').classList.remove('active');
+            document.getElementById('tabStatsBtn').classList.remove('active');
+            if(document.getElementById('tabAdminBtn')) document.getElementById('tabAdminBtn').classList.remove('active');
+
+            if (tab === 'form') { 
+                document.getElementById('form-card').style.display = 'block'; 
+                document.getElementById('tabFormBtn').classList.add('active'); 
+            } else if (tab === 'history') { 
+                document.getElementById('history-card').style.display = 'block'; 
+                document.getElementById('tabHistoryBtn').classList.add('active'); 
+                populateFilterDropdown(); 
+                populateHistoryFilterDates();
+                renderHistory(); 
+            } else if (tab === 'cloud') { 
+                document.getElementById('cloud-card').style.display = 'block'; 
+                document.getElementById('tabCloudBtn').classList.add('active'); 
+            } else if (tab === 'results') { 
+                document.getElementById('results-card').style.display = 'block'; 
+            } else if (tab === 'stats') {
+                document.getElementById('stats-card').style.display = 'block';
+                document.getElementById('tabStatsBtn').classList.add('active');
+                renderStats();
+            } else if (tab === 'admin') {
+                document.getElementById('admin-card').style.display = 'block';
+                document.getElementById('tabAdminBtn').classList.add('active');
+                renderAdminTab();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch(e){}
+    }
+
+    function toggleDetails(id) {
+        try {
+            const row = document.getElementById('details-' + id);
+            const icon = document.getElementById('icon-' + id);
+            
+            if(row.style.display === 'none' || row.style.display === '') {
+                row.style.display = 'table-row';
+                icon.textContent = '▲';
+            } else {
+                row.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        } catch(e){}
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('historyTableContainer'); 
+        if (!container) return;
+        
+        try {
+            const filterEmp = document.getElementById('filterEmployee').value;
+            const filterYear = document.getElementById('filterYear').value;
+            const filterMonth = document.getElementById('filterMonth').value;
+            
+            let hist = appData.history;
+            if (filterEmp) {
+                hist = hist.filter(i => i.author === filterEmp);
+            }
+            
+            if (filterYear && filterYear !== 'ALL') {
+                hist = hist.filter(i => i.departure && i.departure.startsWith(filterYear));
+            }
+
+            if (filterMonth && filterMonth !== 'ALL') {
+                hist = hist.filter(i => {
+                    if (!i.departure) return false;
+                    let parts = i.departure.split(/[- :T]/);
+                    if (parts.length >= 2) return parts[1] === filterMonth;
+                    return false;
+                });
+            }
+            
+            if (hist.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak historii spełniającej kryteria wyszukiwania.</p>';
+                return;
+            }
+
+            let html = `<table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Data wyjazdu</th>
+                        <th>Zgłasza</th>
+                        <th>Lokalizacja</th>
+                        <th style="width: 40px; text-align: center;"></th>
+                    </tr>
+                </thead>`;
+
+            hist.forEach(i => {
+                const shortDate = (i.departure || '').split(' ')[0] || 'Brak'; 
+                const workDesc = i.workDescription || i.purpose || 'Brak';
+                const itemDistance = parseFloat(i.distance) || 0;
+                const privateC = parseFloat(i.privateCosts) || 0;
+                const allowance = parseFloat(i.allowance) || 0;
+                const totalSum = (allowance + privateC).toFixed(2);
+                
+                let emailActionHtml = '';
+                if (i.settled) {
+                    emailActionHtml = `<span style="color: #7f8c8d; font-style: italic; font-size: 12px; font-weight: bold;">🔒 Zamknięty (rozliczony)</span>`;
+                } else if (!i.isSent) {
+                    emailActionHtml = `<button type="button" onclick="sendEmailFromHistory(${i.id})" style="background: #2980b9; padding: 6px 12px; font-size: 12px; color: #fff; border:none; border-radius:4px;">✉️ Wyślij e-mail</button>`;
+                } else {
+                    emailActionHtml = `<span style="color: #27ae60; font-weight: bold; font-size: 12px; display: inline-flex; align-items: center; height: 28px;">✅ Wysłano</span>`;
+                }
+
+                html += `
+                <tbody>
+                    <tr class="history-row" onclick="toggleDetails(${i.id})">
+                        <td style="white-space: nowrap;">${shortDate}</td>
+                        <td><b>${i.author}</b></td>
+                        <td>
+                            ${i.location || 'Brak'}<br>
+                            <span style="font-size: 11px; color: #888; font-weight: 600;">🚗 ${itemDistance} km</span>
+                        </td>
+                        <td style="text-align: center; color: var(--primary-color); font-size: 10px;" id="icon-${i.id}">▼</td>
+                    </tr>
+                    <tr id="details-${i.id}" class="details-row">
+                        <td colspan="4">
+                            <div class="details-content">
+                                <b>Współuczestnicy:</b> ${i.coParticipants}<br>
+                                
+                                <div style="margin: 4px 0; display:flex; align-items:center;">
+                                <b>Pojazd:</b> &nbsp; <span>${i.vehicle}</span> 
+                            </div>
+                            
+                            <b>Termin:</b> ${i.departure} - ${i.return}<br>
+                            <b>Dieta:</b> <span class="badge" style="background:#f1f2f6; color:#333;">${allowance.toFixed(2)} zł</span><br>
+                            ${privateC > 0 ? `<b>Wydatki pryw.:</b> ${privateC.toFixed(2)} zł (${i.privateCostsDesc})<br>` : ''}
+                            <b style="font-size:14px; margin-top:5px; display:block;">Łącznie do zwrotu: <span style="color:var(--primary-color);">${totalSum} zł</span></b>
+                            
+                            <hr style="border: 0; border-top: 1px dashed #e1e1e1; margin: 8px 0;">
+                            <b>Cel:</b> ${i.purpose}<br>
+                            <b>Opis pracy:</b> ${workDesc}<br>
+                            
+                            <hr style="border: 0; border-top: 1px solid #e1e1e1; margin: 12px 0;">
+                            
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+                                
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: ${i.settled ? '#27ae60' : '#e67e22'};">
+                                    <input type="checkbox" style="transform: scale(1.4);" onchange="toggleSettled(${i.id}, this.checked)" ${i.settled ? 'checked' : ''}>
+                                    Rozliczono
+                                </label>
+                                
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                    <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
+                                        📝 Kopiuj
+                                    </button>
+                                    
+                                    ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
+                                    
+                                    <button type="button" class="secondary" style="background: #c0392b; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="deleteProtocol(${i.id})">
+                                        🗑 Usuń
+                                    </button>
+                                </div>
+
+                                ${emailActionHtml}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>`;
+            });
+            html += `</table>`;
+            container.innerHTML = html;
+        } catch(e) {
+            container.innerHTML = '<p style="color: red; font-size: 14px;">Błąd wyświetlania historii.</p>';
+        }
+    }
+
+    function renderStats() {
+        const container = document.getElementById('statsResults'); 
+        if (!container) return;
+        
+        try {
+            const yearVal = document.getElementById('statsYear').value;
+            const monthVal = document.getElementById('statsMonth').value; 
+            const empVal = document.getElementById('statsEmployee').value;
+            
+            let datePrefix = yearVal;
+            if (monthVal !== 'ALL') {
+                datePrefix = yearVal + '-' + monthVal;
+            }
+
+            const hist = appData.history.filter(i => i.departure && String(i.departure).startsWith(datePrefix));
+            
+            if (hist.length === 0) {
+                container.innerHTML = '<p style="color: #666; font-size: 14px;">Brak zarejestrowanych delegacji w wybranym okresie.</p>';
+                return;
+            }
+
+            if (empVal) {
+                const empHist = hist.filter(i => i.author === empVal);
+                if(empHist.length === 0) {
+                    container.innerHTML = `<p style="color: #666; font-size: 14px;">Brak delegacji dla pracownika <b>${empVal}</b> w wybranym okresie.</p>`;
+                    return;
+                }
+                
+                let totalAllowance = 0;
+                let totalHours = 0;
+                let totalKm = 0;
+                let locCounts = {};
+                let vehKm = {};
+                let uniqueUserTrips = new Set();
+
+                empHist.forEach(i => {
+                    totalAllowance += parseFloat(i.allowance) || 0;
+                    totalHours += getDurationInHours(i.departure, i.return);
+                    
+                    const tripDate = (i.departure || '').split(' ')[0] || (i.departure || '').split('T')[0];
+                    const normVeh = (i.vehicle || 'brak').trim().toLowerCase();
+                    const normLoc = (i.location || '').trim().toLowerCase();
+                    const tripKey = tripDate + "_" + normLoc + "_" + normVeh;
+                    
+                    let isNewTrip = false;
+                    if (!uniqueUserTrips.has(tripKey)) {
+                        uniqueUserTrips.add(tripKey);
+                        isNewTrip = true;
+                    }
+                    
+                    if (i.location) {
+                        const locs = String(i.location).split(', ');
+                        locs.forEach(l => {
+                            locCounts[l] = (locCounts[l] || 0) + 1;
+                        });
+                        
+                        let dist = parseFloat(i.distance);
+                        if (isNaN(dist)) dist = 0;
+                        
+                        if (isNewTrip) {
+                            totalKm += dist;
+                            if (dist > 0 && i.vehicle) {
+                                vehKm[i.vehicle] = (vehKm[i.vehicle] || 0) + dist;
+                            }
+                        }
+                    }
+                });
+                
+                let topLoc = Object.keys(locCounts).sort((a,b) => locCounts[b] - locCounts[a])[0] || 'Brak';
+                
+                let vehHtml = '';
+                if (Object.keys(vehKm).length > 0) {
+                    vehHtml = `<div style="margin-top: 15px; font-size: 13px; text-align: left; background: #fff; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-weight: bold; margin-bottom: 8px; color: var(--primary-color);">Dystans wg pojazdów:</div>`;
+                    
+                    const sortedVehs = Object.keys(vehKm).sort((a,b) => vehKm[b] - vehKm[a]);
+                    sortedVehs.forEach(v => {
+                        vehHtml += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f2f6; padding: 4px 0;">
+                            <span>${v}</span> <b>${vehKm[v]} km</b>
+                        </div>`;
+                    });
+                    vehHtml += `</div>`;
+                }
+
+                container.innerHTML = `
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                        <div style="flex:1; min-width: 140px; background:#e1f5fe; border:1px solid #81d4fa; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:11px; color:#0277bd; text-transform:uppercase; font-weight:bold;">Suma Diet</div>
+                            <div style="font-size:20px; font-weight:bold; color:#01579b; margin-top:5px;">${totalAllowance.toFixed(2)} zł</div>
+                        </div>
+                        <div style="flex:1; min-width: 120px; background:#f3e5f5; border:1px solid #ce93d8; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:11px; color:#6a1b9a; text-transform:uppercase; font-weight:bold;">Czas delegacji</div>
+                            <div style="font-size:18px; font-weight:bold; color:#4a148c; margin-top:5px;">${totalHours.toFixed(1)} h</div>
+                        </div>
+                        <div style="flex:1; min-width: 120px; background:#fff3e0; border:1px solid #ffcc80; padding:15px; border-radius:8px; text-align:center;">
+                            <div style="font-size:11px; color:#e65100; text-transform:uppercase; font-weight:bold;">Przejechane</div>
+                            <div style="font-size:18px; font-weight:bold; color:#bf360c; margin-top:5px;">${totalKm} km</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 14px; text-align: center; color: #555; background: #fff; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        Fizyczne wyjazdy (trasy): <b>${uniqueUserTrips.size}</b> | Złożone protokoły: <b>${empHist.length}</b><br>
+                        Najczęstszy kierunek: <b>${topLoc}</b>
+                    </div>
+                    ${vehHtml}
+                `;
+            } else {
+                const stats = {};
+                let globalTotal = 0;
+                let totalTrips = 0;
+                let globalKm = 0;
+                let vehCounts = {};
+                let uniqueFleetTrips = new Set();
+                
+                hist.forEach(i => {
+                    if(!stats[i.author]) stats[i.author] = { trips: 0, allowance: 0 };
+                    stats[i.author].trips++;
+                    
+                    const allow = parseFloat(i.allowance) || 0;
+                    stats[i.author].allowance += allow;
+                    globalTotal += allow;
+                    
+                    const tripDate = (i.departure || '').split(' ')[0] || (i.departure || '').split('T')[0];
+                    const normVeh = (i.vehicle || 'brak').trim().toLowerCase();
+                    const normLoc = (i.location || '').trim().toLowerCase();
+                    const tripKey = tripDate + "_" + normLoc + "_" + normVeh;
+                    
+                    if (!uniqueFleetTrips.has(tripKey)) {
+                        uniqueFleetTrips.add(tripKey);
+                        totalTrips++;
+                        
+                        if (i.location) {
+                            let dist = parseFloat(i.distance);
+                            if (isNaN(dist)) dist = 0;
+                            
+                            globalKm += dist;
+                            
+                            if (i.vehicle && dist > 0) {
+                                vehCounts[i.vehicle] = (vehCounts[i.vehicle] || 0) + dist;
+                            }
+                        }
+                    }
+                });
+                
+                let vehHtml = '';
+                if (Object.keys(vehCounts).length > 0) {
+                    vehHtml = `<div style="margin-top: 15px; font-size: 13px; text-align: left; background: #fff; padding: 12px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <div style="font-weight: bold; margin-bottom: 8px; color: var(--primary-color);">Dystans floty wg pojazdów:</div>`;
+                    
+                    const sortedVehs = Object.keys(vehCounts).sort((a,b) => vehCounts[b] - vehCounts[a]);
+                    sortedVehs.forEach(v => {
+                        vehHtml += `<div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f2f6; padding: 4px 0;">
+                            <span>${v}</span> <b>${vehCounts[v]} km</b>
+                        </div>`;
+                    });
+                    vehHtml += `</div>`;
+                }
+
+                let tableHtml = `
+                    <div style="margin: 15px 0; padding: 15px; background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #e65100; text-transform: uppercase; font-weight:bold;">Suma diet dla całego zespołu</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #e65100; margin-top: 5px;">${globalTotal.toFixed(2)} zł</div>
+                        <div style="font-size: 13px; color: #d84315; margin-top: 8px;">
+                            Fizyczne wyjazdy (flota): <b>${totalTrips}</b> | Złożone protokoły: <b>${hist.length}</b><br>
+                            Łączny dystans: <b>${globalKm} km</b>
+                        </div>
+                    </div>
+                    ${vehHtml}
+                    <table class="history-table" style="margin-top: 15px; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Pracownik</th>
+                            <th style="text-align:center;">Protokoły</th>
+                            <th>Suma Diet</th>
+                        </tr>
+                    </thead><tbody>`;
+                
+                for(let emp in stats) {
+                    tableHtml += `<tr>
+                        <td><b>${emp}</b></td>
+                        <td style="text-align:center; font-size:14px;">${stats[emp].trips}</td>
+                        <td>
+                            <b style="color:var(--primary-color);">${stats[emp].allowance.toFixed(2)} zł</b>
+                        </td>
+                    </tr>`;
+                }
+                tableHtml += `</tbody></table>`;
+                container.innerHTML = tableHtml;
+            }
+        } catch (e) {
+            console.error("Błąd generowania statystyk:", e);
+            container.innerHTML = '<p style="color: red; font-size: 14px;">Wystąpił błąd podczas generowania statystyk.</p>';
+        }
+    }
+
+    function toggleSettled(id, isChecked) {
+        const item = appData.history.find(i => i.id === id);
+        if (item) {
+            item.settled = isChecked;
+            item.updatedAt = Date.now(); 
+            logActivity(`Zmieniono status rozliczenia dla protokołu: ${item.location}`);
+            saveAppData();
+            renderHistory(); 
+            
+            if (confirm('Zmieniono status rozliczenia. Czy wysłać tę zmianę od razu do chmury?')) {
+                uploadToCloud(true);
+            }
+        }
+    }
+
+    // ==========================================
+    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY + TOAST + CZARNA LISTA)
+    // ==========================================
+
+    function createBackup() {
+        try {
+            localStorage.setItem(BACKUP_KEY, JSON.stringify(appData));
+        } catch (e) {
+            console.error("Błąd tworzenia kopii zapasowej:", e);
+        }
+    }
+
+    function mergeWithCloudData(cloudData) {
+        if (!cloudData) return;
+
+        // 1. Łączenie usuniętych ID (aby nie pobrać skasowanych)
+        let cloudDeleted = Array.isArray(cloudData.deletedIds) ? cloudData.deletedIds : [];
+        appData.deletedIds = [...new Set([...(appData.deletedIds || []), ...cloudDeleted])];
+        
+        let cloudDeletedDict = Array.isArray(cloudData.deletedDict) ? cloudData.deletedDict : [];
+        appData.deletedDict = [...new Set([...(appData.deletedDict || []), ...cloudDeletedDict])];
+
+        // 2. Inteligentne łączenie Historii (Protokołów)
+        let mergedHistoryMap = new Map();
+        
+        // Dodaj lokalne wpisy (pomijając całkowicie te usunięte)
+        (appData.history || []).forEach(item => {
+            if (!appData.deletedIds.includes(item.id)) {
+                mergedHistoryMap.set(item.id, item);
+            }
+        });
+
+        // Nałóż wpisy z chmury (nadpisz lokalne tylko jeśli te w chmurze są nowsze)
+        if (Array.isArray(cloudData.history)) {
+            cloudData.history.forEach(cloudItem => {
+                if (appData.deletedIds.includes(cloudItem.id)) return; // Pomijamy usunięte w chmurze
+                
+                let localItem = mergedHistoryMap.get(cloudItem.id);
+                if (localItem) {
+                    let localTime = localItem.updatedAt || 0;
+                    let cloudTime = cloudItem.updatedAt || 0;
+                    // Jeśli wpis z chmury był edytowany później, przyjmij wersję z chmury
+                    if (cloudTime > localTime) {
+                        mergedHistoryMap.set(cloudItem.id, cloudItem);
+                    }
+                } else {
+                    // Całkowicie nowy wpis z chmury (od innego użytkownika)
+                    mergedHistoryMap.set(cloudItem.id, cloudItem);
+                }
+            });
+        }
+        
+        // Zapisz złączoną historię chronologicznie
+        appData.history = Array.from(mergedHistoryMap.values()).sort((a, b) => b.id - a.id);
+
+        // 3. Łączenie Lokalizacji i Dystansów
+        if (Array.isArray(cloudData.locations)) {
+            let combinedLocs = [...new Set([...(appData.locations || []), ...cloudData.locations])];
+            appData.locations = combinedLocs.filter(loc => 
+                typeof loc === 'string' && 
+                !removedLocations.includes(loc.toLowerCase().trim()) &&
+                !appData.deletedDict.includes(loc.toLowerCase().trim()) // FILTR CZARNEJ LISTY
+            );
+            appData.locations = sortLocations(appData.locations);
+        }
+        if (cloudData.distances) {
+            appData.distances = { ...(appData.distances || {}), ...cloudData.distances };
+        }
+
+        // 4. Łączenie Pojazdów
+        if (Array.isArray(cloudData.vehicles)) {
+            let combinedVehicles = [...new Set([...(appData.vehicles || []), ...cloudData.vehicles])];
+            appData.vehicles = combinedVehicles.filter(v => 
+                typeof v === 'string' && 
+                !appData.deletedDict.includes(v.toLowerCase().trim()) // FILTR CZARNEJ LISTY
+            );
+            appData.vehicles = sortVehicles(appData.vehicles);
+        }
+
+        // 5. Łączenie Pracowników
+        if (Array.isArray(cloudData.employees)) {
+            let empMap = new Map();
+            (appData.employees || []).forEach(e => empMap.set(e.name.toLowerCase(), e));
+            cloudData.employees.forEach(e => {
+                if (!empMap.has(e.name.toLowerCase())) {
+                    empMap.set(e.name.toLowerCase(), e);
+                }
+            });
+            appData.employees = Array.from(empMap.values());
+        }
+
+        // 6. Łączenie Logów Aktywności (max 150 najnowszych)
+        if (Array.isArray(cloudData.activityLogs)) {
+            let logsMap = new Map();
+            (appData.activityLogs || []).forEach(l => logsMap.set(l.id, l));
+            cloudData.activityLogs.forEach(l => logsMap.set(l.id, l));
+            appData.activityLogs = Array.from(logsMap.values())
+                                        .sort((a, b) => b.timestamp - a.timestamp)
+                                        .slice(0, 150);
+        }
+    }
+
+    async function uploadToCloud(silent = false) {
+        let waitLoops = 0;
+        // Zamiast odrzucać od razu, czekamy aż inna synchronizacja się zakończy (maks ok. 10 sek.)
+        while (isSyncing && waitLoops < 20) {
+            await new Promise(r => setTimeout(r, 500));
+            waitLoops++;
+        }
+        
+        isSyncing = true;
+        
+        const btn = document.getElementById('btnUploadCloud');
+        if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
+        
+        showSyncToast("⏳ Wysyłanie zmian do chmury...", "info");
+        
+        createBackup();
+        
+        try {
+            // 1. Zawsze najpierw pobieramy najnowszą strukturę
+            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'GET',
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
+            });
+            
+            if (resGet.ok) {
+                const data = await resGet.json();
+                if (data && data.record) mergeWithCloudData(data.record);
+            } else if (!silent && (resGet.status === 401 || resGet.status === 403)) {
+                throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
+            }
+
+            // 2. Wysyłamy nadpisany (scaliowany) plik z blokadą wersjonowania
+            const payload = {
+                locations: appData.locations,
+                vehicles: appData.vehicles,
+                employees: appData.employees,
+                distances: appData.distances,
+                history: appData.history,
+                activityLogs: appData.activityLogs,
+                deletedIds: appData.deletedIds,
+                deletedDict: appData.deletedDict,
+                lastSync: new Date().toLocaleString('pl-PL')
+            };
+
+            const resPut = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-Master-Key': CLOUD_API_KEY,
+                    'X-Bin-Versioning': 'false' 
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (resPut.ok) {
+                appData.lastSync = new Date().toLocaleString('pl-PL');
+                saveAppData(); 
+                updateSyncDateUI();
+                
+                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
+                
+                if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                if (document.getElementById('stats-card').style.display === 'block') renderStats();
+                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+                
+                logActivity('Pomyślnie wysłano dane do chmury');
+                showSyncToast("✅ Baza wysłana i zaktualizowana!", "success");
+            } else {
+                const errBody = await resPut.text();
+                throw new Error(`Serwer odrzucił zapis (Status ${resPut.status}): ${errBody}`);
+            }
+        } catch(err) { 
+            console.error("Błąd zapisu w chmurze:", err);
+            
+            try { 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px; color: #e74c3c;">BŁĄD WYSYŁANIA</b>`; 
+            } catch(e){}
+            
+            logActivity(`Błąd chmury (zapis): ${err.message}`);
+            showSyncToast(`❌ Błąd zapisu w chmurze! Sprawdź internet.`, "error");
+        } finally {
+            if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
+            isSyncing = false; // Zwolnienie blokady KOLEJKI ZAPISÓW
+        }
+    }
+
+    async function downloadFromCloud(silent = false) {
+        let waitLoops = 0;
+        while (isSyncing && waitLoops < 20) {
+            await new Promise(r => setTimeout(r, 500));
+            waitLoops++;
+        }
+        
+        isSyncing = true;
+
+        const btn = document.getElementById('btnDownloadCloud');
+        if (!silent && btn) btn.textContent = "Pobieranie...";
+        
+        if (!silent) showSyncToast("⏳ Pobieranie z chmury...", "info");
+        
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+                method: 'GET',
+                headers: { 'X-Master-Key': CLOUD_API_KEY }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.record) {
+                    createBackup(); 
+                    if (!silent) logActivity('Ręczne pobranie bazy z chmury');
+                    mergeWithCloudData(data.record);
+                    appData.lastSync = new Date().toLocaleString('pl-PL');
+                    saveAppData(); 
+                    
+                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
+                    
+                    if (document.getElementById('history-card').style.display === 'block') renderHistory();
+                    if (document.getElementById('stats-card').style.display === 'block') renderStats();
+                    if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
+                    
+                    if (!silent) showSyncToast("✅ Baza pobrana i zsynchronizowana.", "success");
+                } else {
+                    throw new Error("Pusta odpowiedź z serwera chmury.");
+                }
+            } else { 
+                const errText = await res.text();
+                throw new Error(`Błąd pobierania (Status ${res.status}): ${errText}`);
+            }
+        } catch(err) { 
+            console.error("Błąd pobierania z chmury:", err);
+            
+            try { 
+                document.getElementById('syncStatusUI').innerHTML = `Ostatnia udana synchronizacja z serwerem:<br><b style="font-size: 16px; color: #e74c3c;">BŁĄD POBIERANIA</b>`; 
+            } catch(e){}
+            
+            if (!silent) showSyncToast(`❌ Błąd pobierania bazy z sieci!`, "error");
+        } finally {
+            if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
+            isSyncing = false;
+        }
+    }
+
+    window.onload = () => {
+        initApp();
+        downloadFromCloud(true); 
+    };
+</script>
+
+</body>
+</html>
