@@ -344,23 +344,7 @@
         <div class="sync-info" id="syncStatusUI">
             Ostatnia synchronizacja urządzenia: <br><b style="font-size: 16px;">Brak danych</b>
         </div>
-
-        <div id="cloudAdminButtons" style="display: none;">
-            <button type="button" class="cloud-btn" style="background-color: #27ae60;" id="btnDownloadCloud" onclick="downloadFromCloud(false)">⬇️ POBIERZ I POŁĄCZ BAZĘ</button>
-            <button type="button" class="cloud-btn" id="btnUploadCloud" onclick="uploadToCloud()">⬆️ WYŚLIJ MOJE ZMIANY DO BAZY</button>
-        </div>
         
-        <div id="adminInfoBox" style="display: none; border: 2px dashed #8e44ad; background: #fdfcfe; padding: 15px; border-radius: 8px; margin-top: 20px;">
-            <h3 style="color: #8e44ad; margin-top: 0; font-size: 14px; font-weight: 900;">ℹ️ Opis funkcji systemu (Panel Admina)</h3>
-            <ul style="font-size: 12px; color: #555; padding-left: 18px; margin-bottom: 12px; line-height: 1.5;">
-                <li><b>Pobierz i połącz bazę:</b> Pobiera najnowszy stan z chmury JSONBin i scala go bez ryzyka nadpisania danych kolegów.</li>
-                <li><b>Wyślij moje zmiany:</b> Wypycha Twoje lokalne wpisy do wspólnej chmury (auto-sync robi to w tle dla edycji słowników).</li>
-                <li><b>Baza Odległości:</b> Kontrola kilometrów w obie strony dla tras oraz funkcja automatycznego przeliczania zaległości.</li>
-                <li><b>Dziennik aktywności:</b> Rejestr urządzeń i działań użytkowników w systemie.</li>
-                <li><b>Zarządzanie animacjami:</b> Niezależne włączanie/wyłączanie deszczu pieniędzy, śniegu, wiaderek i szczotek.</li>
-            </ul>
-        </div>
-
         <div style="border: 1px solid #3498db; background: #ebf5fb; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: center;">
             <h3 style="color: #2980b9; margin-top: 0; font-size: 14px; font-weight: 900;">💡 Chcesz usprawnić aplikację?</h3>
             <p style="font-size: 12px; color: #555; margin-bottom: 12px;">Masz pomysł na nową funkcję, zauważyłeś błąd lub chcesz coś zmienić?</p>
@@ -370,7 +354,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v65 (Blacklist + JSONBin Lock)
+            Wersja Systemu: v66 (Pancerna Synchronizacja)
         </div>
     </div>
 
@@ -539,10 +523,9 @@
     const CLOUD_API_KEY = '$2a$10$ByTOMu7PWJeiUnUEy35TFO45Q6oqlmBBFfgMQJPnzlJDU5xqTqRT2';
     // ==========================================
 
-    const STORAGE_KEY = 'rckik_app_data_v65'; 
+    const STORAGE_KEY = 'rckik_app_data_v66'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
-    let isSyncing = false; 
 
     let deviceId = localStorage.getItem('rckik_device_id');
     if(!deviceId) {
@@ -881,10 +864,8 @@
             if (isNaN(dist)) dist = 0;
         }
         
-        // Zdejmowanie z czarnej listy przy ponownym dodaniu
-        if (appData.deletedDictItems) {
-            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
-        }
+        appData.deletedDictItems = appData.deletedDictItems || [];
+        appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
 
         appData.locations.push(val); 
         appData.locations = sortLocations(appData.locations);
@@ -932,8 +913,8 @@
         if (newName && newName.trim() !== '' && newName !== oldName) {
             const cleanNew = newName.trim();
             appData.deletedDictItems = appData.deletedDictItems || [];
-            appData.deletedDictItems.push(oldName); // Stara na blacklistę
-            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== cleanNew); // Nowa zdjęta z blacklisty
+            appData.deletedDictItems.push(oldName); 
+            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== cleanNew); 
             
             appData.locations[index] = cleanNew;
             appData.locations = sortLocations(appData.locations);
@@ -995,9 +976,8 @@
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
         
-        if (appData.deletedDictItems) {
-            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
-        }
+        appData.deletedDictItems = appData.deletedDictItems || [];
+        appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
         
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
@@ -1011,9 +991,8 @@
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
         
-        if (appData.deletedDictItems) {
-            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
-        }
+        appData.deletedDictItems = appData.deletedDictItems || [];
+        appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== val);
         
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
@@ -1196,11 +1175,6 @@
         const name = document.getElementById('newEmployeeInput').value.trim();
         if (!name) return alert('Wpisz imię i nazwisko pracownika.');
         if (appData.employees.some(e => e.name.toLowerCase() === name.toLowerCase())) return alert('Taki pracownik już istnieje.');
-        
-        if (appData.deletedDictItems) {
-            appData.deletedDictItems = appData.deletedDictItems.filter(i => i !== name);
-        }
-        
         appData.employees.push({ name: name, email: DEFAULT_MANAGER_EMAIL, hidden: false });
         logActivity(`Dodano pracownika do słownika: ${name}`);
         saveAppData(); renderEmployees(); populateFilterDropdown(); document.getElementById('newEmployeeInput').value = '';
@@ -1363,7 +1337,6 @@
         const durationStr = calculateDurationString(departure, returnT);
         const totalAmountToReturn = allowanceAmount + myCosts;
 
-        // Tryb administratora (edycja)
         if (adminEditingId) {
             let item = appData.history.find(i => i.id === adminEditingId);
             if (item) {
@@ -1673,8 +1646,6 @@ ${authorName}`;
                                 <button type="button" class="secondary" style="background: #f39c12; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="copyToForm(${i.id})">
                                     📝 Kopiuj i wyślij jako...
                                 </button>
-                                
-                                ${isAdmin ? `<button type="button" class="secondary" style="background: #8e44ad; padding: 6px 12px; font-size: 12px; border:none; border-radius:4px; color:#fff;" onclick="adminEditProtocol(${i.id})">🛠 Edytuj (Admin)</button>` : ''}
 
                                 ${emailActionHtml}
                             </div>
@@ -1900,26 +1871,24 @@ ${authorName}`;
     }
 
     async function uploadToCloud(silent = false) {
-        if (isSyncing) {
-            console.log("Synchronizacja trwa, pominięto podwójne wywołanie.");
-            return;
-        }
-        isSyncing = true;
-        
         const btn = document.getElementById('btnUploadCloud');
         if (btn && !silent) btn.textContent = "Łączenie i wysyłanie...";
         
         createBackup();
         
         try {
-            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+            const resGet = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 method: 'GET',
-                headers: { 'X-Master-Key': CLOUD_API_KEY }
+                headers: { 
+                    'X-Master-Key': CLOUD_API_KEY
+                }
             });
             
             if (resGet.ok) {
                 const data = await resGet.json();
-                if (data && data.record) mergeWithCloudData(data.record);
+                if (data && data.record) {
+                    mergeWithCloudData(data.record);
+                }
             } else if (!silent && (resGet.status === 401 || resGet.status === 403)) {
                 throw new Error(`Błąd autoryzacji JSONBin (Kod ${resGet.status}). Sprawdź klucz API.`);
             }
@@ -1940,8 +1909,7 @@ ${authorName}`;
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json', 
-                    'X-Master-Key': CLOUD_API_KEY,
-                    'X-Bin-Versioning': 'false' 
+                    'X-Master-Key': CLOUD_API_KEY
                 },
                 body: JSON.stringify(payload)
             });
@@ -1951,11 +1919,16 @@ ${authorName}`;
                 saveAppData(); 
                 updateSyncDateUI();
                 
-                renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates();
+                renderLocations(); 
+                renderVehicles(); 
+                renderEmployees(); 
+                populateFilterDropdown(); 
+                populateStatsDates(); 
+                populateHistoryFilterDates();
+                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                 
                 if (document.getElementById('history-card').style.display === 'block') renderHistory();
                 if (document.getElementById('stats-card').style.display === 'block') renderStats();
-                if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                 
                 if (!silent) {
                     logActivity('Pomyślnie wysłano dane do chmury');
@@ -1968,26 +1941,24 @@ ${authorName}`;
         } catch(err) { 
             console.error("Błąd zapisu w chmurze:", err);
             if (!silent) {
-                logActivity(`Błąd chmury (zapis): ${err.message}`);
+                logActivity(`Błąd chmury: ${err.message}`);
                 alert(`❌ Problem z zapisem w chmurze:\n${err.message}`);
             }
         } finally {
             if (btn && !silent) btn.textContent = "⬆️ WYŚLIJ MOJE ZMIANY DO BAZY";
-            isSyncing = false; 
         }
     }
 
     async function downloadFromCloud(silent = false) {
-        if (isSyncing) return;
-        isSyncing = true;
-
         const btn = document.getElementById('btnDownloadCloud');
         if (!silent && btn) btn.textContent = "Pobieranie...";
         
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_BIN_ID}/latest`, {
                 method: 'GET',
-                headers: { 'X-Master-Key': CLOUD_API_KEY }
+                headers: { 
+                    'X-Master-Key': CLOUD_API_KEY
+                }
             });
             
             if (res.ok) {
@@ -1999,13 +1970,21 @@ ${authorName}`;
                     appData.lastSync = new Date().toLocaleString('pl-PL');
                     saveAppData(); 
                     
-                    renderLocations(); renderVehicles(); renderEmployees(); populateFilterDropdown(); populateStatsDates(); populateHistoryFilterDates(); updateSyncDateUI();
+                    renderLocations(); 
+                    renderVehicles(); 
+                    renderEmployees(); 
+                    populateFilterDropdown(); 
+                    populateStatsDates(); 
+                    populateHistoryFilterDates(); 
+                    updateSyncDateUI();
                     
                     if (document.getElementById('history-card').style.display === 'block') renderHistory();
                     if (document.getElementById('stats-card').style.display === 'block') renderStats();
                     if (document.getElementById('admin-card').style.display === 'block') renderAdminTab();
                     
-                    if (!silent) alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
+                    if (!silent) {
+                        alert("✅ Sukces! Baza pobrana i zsynchronizowana.");
+                    }
                 } else {
                     throw new Error("Pusta odpowiedź z serwera chmury.");
                 }
@@ -2015,10 +1994,11 @@ ${authorName}`;
             }
         } catch(err) { 
             console.error("Błąd pobierania z chmury:", err);
-            if (!silent) alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
+            if (!silent) {
+                alert(`❌ Problem z pobraniem bazy:\n${err.message}`);
+            }
         } finally {
             if (!silent && btn) btn.textContent = "⬇️ POBIERZ I POŁĄCZ BAZĘ";
-            isSyncing = false;
         }
     }
 
