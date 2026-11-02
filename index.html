@@ -170,11 +170,20 @@
             user-select: none;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
+
+        .alert-toast {
+            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #e74c3c; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold;
+            font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000;
+            width: 90%; max-width: 400px; text-align: center; line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
 <div id="syncToast" class="sync-toast"></div>
+
+<div class="alert-toast" id="alertToast">⚠️ Nie zapomnij załączyć pliku faktury/rachunku do wiadomości!</div>
 
 <div class="container" id="mainContainer">
     <!-- Ukryty tryb administratora wywoływany 5-krotnym kliknięciem -->
@@ -376,7 +385,7 @@
         </div>
         
         <div class="app-footer">
-            Wersja Systemu: v66 (Dodano wskaźnik na żywo "Toast")
+            Wersja Systemu: v67 (Zabezpieczona Czarna Lista aut usuniętych)
         </div>
     </div>
 
@@ -551,7 +560,6 @@
         toast.className = `sync-toast show ${type}`;
         toast.innerHTML = message;
         
-        // Zniknij po 4 sekundach (chyba że info)
         if (type !== 'info') {
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('show');
@@ -574,7 +582,7 @@
     const STORAGE_KEY = 'rckik_app_data_v64'; 
     const BACKUP_KEY = 'rckik_app_backup';
     const DEFAULT_MANAGER_EMAIL = 'bartosz.miller@m2mteam.pl';
-    let isSyncing = false; // BLOKADA SYNCHRONIZACJI
+    let isSyncing = false; 
 
     let deviceId = localStorage.getItem('rckik_device_id');
     if(!deviceId) {
@@ -743,6 +751,7 @@
         history: [],
         activityLogs: [],
         deletedIds: [],
+        deletedDict: [], // Czarna lista dla usuniętych słowników
         lastSync: 'Nigdy'
     };
 
@@ -775,6 +784,7 @@
                     history: Array.isArray(saved.history) ? saved.history : [],
                     activityLogs: Array.isArray(saved.activityLogs) ? saved.activityLogs : [],
                     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
+                    deletedDict: Array.isArray(saved.deletedDict) ? saved.deletedDict : [],
                     lastSync: saved.lastSync || 'Nigdy'
                 };
                 
@@ -910,6 +920,11 @@
             if (isNaN(dist)) dist = 0;
         }
         
+        // Zdejmij z czarnej listy jeśli kiedyś ktoś ją usunął
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(d => d !== val.toLowerCase());
+        }
+
         appData.locations.push(val); 
         appData.locations = sortLocations(appData.locations);
         appData.distances[val.toLowerCase()] = dist * 2;
@@ -955,6 +970,12 @@
         const oldName = appData.locations[index];
         const newName = prompt('Podaj nową nazwę dla lokalizacji:', oldName);
         if (newName && newName.trim() !== '' && newName !== oldName) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(oldName.toLowerCase().trim()); // Zablokuj starą nazwę w chmurze
+            
+            appData.deletedDict = appData.deletedDict.filter(d => d !== newName.toLowerCase().trim()); // Odblokuj nową
+            
             appData.locations[index] = newName.trim();
             appData.locations = sortLocations(appData.locations);
             
@@ -988,6 +1009,9 @@
     function adminDeleteLoc(index) {
         const loc = appData.locations[index];
         if (confirm(`Czy na pewno usunąć '${loc}' z bazy?`)) {
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(loc.toLowerCase().trim()); // CZARNA LISTA
+            
             appData.locations.splice(index, 1);
             logActivity(`(Admin) Usunięto lokalizację ze słownika: ${loc}`);
             saveAppData();
@@ -1011,6 +1035,12 @@
         const val = document.getElementById('newVehicleInput').value.trim();
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        
+        // Zdejmij z czarnej listy
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(v => v !== val.toLowerCase());
+        }
+
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`Dodano nowy pojazd do słownika: ${val}`);
@@ -1022,6 +1052,11 @@
         const val = document.getElementById('adminNewVehicleInput').value.trim();
         if (!val) return alert('Wpisz dane samochodu.');
         if (appData.vehicles.some(v => v.toLowerCase() === val.toLowerCase())) return alert('Taki samochód już istnieje.');
+        
+        if (appData.deletedDict) {
+            appData.deletedDict = appData.deletedDict.filter(v => v !== val.toLowerCase());
+        }
+
         appData.vehicles.push(val); 
         appData.vehicles = sortVehicles(appData.vehicles);
         logActivity(`(Admin) Dodano nowy pojazd do słownika: ${val}`);
@@ -1036,6 +1071,12 @@
         const oldName = appData.vehicles[index];
         const newName = prompt('Podaj nową nazwę dla pojazdu:', oldName);
         if (newName && newName.trim() !== '' && newName !== oldName) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(oldName.toLowerCase().trim()); // Zablokuj starą nazwę w chmurze
+            
+            appData.deletedDict = appData.deletedDict.filter(v => v !== newName.toLowerCase().trim());
+
             appData.vehicles[index] = newName.trim();
             appData.vehicles = sortVehicles(appData.vehicles);
             logActivity(`(Admin) Zmieniono nazwę pojazdu z ${oldName} na ${newName.trim()}`);
@@ -1049,6 +1090,10 @@
     function adminDeleteVehicle(index) {
         const veh = appData.vehicles[index];
         if (confirm(`Czy na pewno usunąć pojazd '${veh}'?`)) {
+            
+            if (!appData.deletedDict) appData.deletedDict = [];
+            appData.deletedDict.push(veh.toLowerCase().trim()); // CZARNA LISTA
+
             appData.vehicles.splice(index, 1);
             logActivity(`(Admin) Usunięto pojazd: ${veh}`);
             saveAppData();
@@ -2193,7 +2238,7 @@ ${authorName}`;
     }
 
     // ==========================================
-    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY + TOAST)
+    // FUNKCJE SYNCHRONIZACJI Z CHMURĄ (NAPRAWIONE BLOKADY + TOAST + CZARNA LISTA)
     // ==========================================
 
     function createBackup() {
@@ -2210,6 +2255,9 @@ ${authorName}`;
         // 1. Łączenie usuniętych ID (aby nie pobrać skasowanych)
         let cloudDeleted = Array.isArray(cloudData.deletedIds) ? cloudData.deletedIds : [];
         appData.deletedIds = [...new Set([...(appData.deletedIds || []), ...cloudDeleted])];
+        
+        let cloudDeletedDict = Array.isArray(cloudData.deletedDict) ? cloudData.deletedDict : [];
+        appData.deletedDict = [...new Set([...(appData.deletedDict || []), ...cloudDeletedDict])];
 
         // 2. Inteligentne łączenie Historii (Protokołów)
         let mergedHistoryMap = new Map();
@@ -2247,7 +2295,11 @@ ${authorName}`;
         // 3. Łączenie Lokalizacji i Dystansów
         if (Array.isArray(cloudData.locations)) {
             let combinedLocs = [...new Set([...(appData.locations || []), ...cloudData.locations])];
-            appData.locations = combinedLocs.filter(loc => typeof loc === 'string' && !removedLocations.includes(loc.toLowerCase().trim()));
+            appData.locations = combinedLocs.filter(loc => 
+                typeof loc === 'string' && 
+                !removedLocations.includes(loc.toLowerCase().trim()) &&
+                !appData.deletedDict.includes(loc.toLowerCase().trim()) // FILTR CZARNEJ LISTY
+            );
             appData.locations = sortLocations(appData.locations);
         }
         if (cloudData.distances) {
@@ -2257,7 +2309,11 @@ ${authorName}`;
         // 4. Łączenie Pojazdów
         if (Array.isArray(cloudData.vehicles)) {
             let combinedVehicles = [...new Set([...(appData.vehicles || []), ...cloudData.vehicles])];
-            appData.vehicles = sortVehicles(combinedVehicles.filter(v => typeof v === 'string'));
+            appData.vehicles = combinedVehicles.filter(v => 
+                typeof v === 'string' && 
+                !appData.deletedDict.includes(v.toLowerCase().trim()) // FILTR CZARNEJ LISTY
+            );
+            appData.vehicles = sortVehicles(appData.vehicles);
         }
 
         // 5. Łączenie Pracowników
@@ -2323,6 +2379,7 @@ ${authorName}`;
                 history: appData.history,
                 activityLogs: appData.activityLogs,
                 deletedIds: appData.deletedIds,
+                deletedDict: appData.deletedDict,
                 lastSync: new Date().toLocaleString('pl-PL')
             };
 
